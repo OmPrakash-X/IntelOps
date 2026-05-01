@@ -2,6 +2,8 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
+import userRoutes from "./routes/user.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 
 const app = express();
 
@@ -16,5 +18,8 @@ app.use(cookieParser());
 app.get('/health', (req, res) => {
   res.status(200).json({ message: 'Server is healthy' });
 });
+
+app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
 
 export default app;

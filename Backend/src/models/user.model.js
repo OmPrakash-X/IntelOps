@@ -25,12 +25,12 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: ["admin", "bugger", "teamLead", "teamMember"],
-    required: true
+    required: true,
+    index: true
   },
 
   avatar: {
     type: String,
-    required: true
   },
 
   isActive: {
@@ -40,11 +40,13 @@ const userSchema = new mongoose.Schema({
 
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
+    ref: "User",
+    index: true
   }
 
 }, { timestamps: true });
 
+userSchema.index({ role: 1, createdBy: 1 });
 
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
