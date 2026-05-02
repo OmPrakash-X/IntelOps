@@ -3,7 +3,6 @@ import {
   createIncident,
   getIncidents,
   getIncidentById,
-  assignLead,
   assignResponders,
   updateStatus
 } from "../controllers/incident.controller.js";
@@ -39,15 +38,6 @@ router.get(
   "/:id",
   protect,
   getIncidentById
-);
-
-
-router.patch(
-  "/:id/assign-lead",
-  protect,
-  allowRoles("admin"),
-  validateAssignLead,
-  assignLead
 );
 
 
