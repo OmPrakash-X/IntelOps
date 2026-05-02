@@ -36,5 +36,8 @@ export const validateCreateUser = [
     .optional()
     .isURL().withMessage("Avatar must be a valid URL"),
 
-  validateRequest
-];
+  body("group")
+    .optional()
+    .isMongoId()
+    .withMessage("Invalid group ID")
+, validateRequest];

@@ -43,6 +43,13 @@ const incidentSchema = new mongoose.Schema({
     ref: "Project"
   },
 
+  group: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Group",
+    required: true,
+    index: true
+  },
+
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
@@ -51,6 +58,7 @@ const incidentSchema = new mongoose.Schema({
 
   assignedLead: {
     type: mongoose.Schema.Types.ObjectId,
+    required: true,
     ref: "User",
     index: true
   },

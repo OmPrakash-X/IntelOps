@@ -2,11 +2,11 @@ import User from "../models/user.model.js";
 
 export const createUser = async (req, res) => {
   try {
-    const { username, email, password, role} = req.body;
+    const { username, email, password, role, group} = req.body;
     const creatorRole = req.user.role;
 
     const rolePermissions = {
-      admin: ["bugger", "teamLead", "teamMember"],
+      admin: ["bugger", "teamLead"],
       teamLead: ["teamMember"]
     };
 
@@ -31,7 +31,8 @@ export const createUser = async (req, res) => {
       email,
       password,
       role,
-      createdBy: req.user._id
+      createdBy: req.user._id,
+      group: group || null
     });
 
     res.status(201).json({
@@ -61,6 +62,7 @@ export const getUsers = async (req, res) => {
     }
     
     else if (currentUser.role === "teamLead") {
+      filter.group = currentUser.group;
       filter.createdBy = currentUser._id;
       filter.role = "teamMember";
     }

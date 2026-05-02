@@ -7,6 +7,8 @@ import authRoutes from "./routes/auth.routes.js";
 import incidentRoutes from "./routes/incident.routes.js";
 import timelineRoutes from "./routes/timeline.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
+import projectRoutes from "./routes/project.routes.js";
+import groupRoutes from "./routes/group.routes.js";
 
 const app = express();
 
@@ -27,4 +29,7 @@ app.use("/api/auth", authRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use("/api/incidents", timelineRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/groups", groupRoutes);
+
 export default app;
