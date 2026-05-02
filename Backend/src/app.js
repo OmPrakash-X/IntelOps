@@ -5,6 +5,7 @@ import express from 'express';
 import userRoutes from "./routes/user.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import incidentRoutes from "./routes/incident.routes.js";
+import timelineRoutes from "./routes/timeline.routes.js";
 
 const app = express();
 
@@ -23,5 +24,6 @@ app.get('/health', (req, res) => {
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use('/api/incidents', incidentRoutes);
+app.use("/api/incidents", timelineRoutes);
 
 export default app;
