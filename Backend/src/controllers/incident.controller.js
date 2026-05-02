@@ -1,6 +1,6 @@
 import Incident from "../models/incident.model.js";
 import Timeline from "../models/timeline.model.js";
-
+import { createNotification } from "../utils/notification.util.js";
 
 export const createIncident = async (req, res) => {
   try {
@@ -15,11 +15,28 @@ export const createIncident = async (req, res) => {
       status: "open"
     });
 
+    const admin = await User.findOne({ role: "admin" }).select("_id");
+    const adminIds = [admin._id];
+    
+    await createNotification({
+      recipients: adminIds,
+      message: "New incident created",
+      incidentId: incident._id,
+      type: "incident"
+    });
+
     await Timeline.create({
       incident: incident._id,
       message: `Incident reported by ${req.user.username}`,
       type: "status",
       createdBy: req.user._id
+    });
+
+    await createNotification({
+      recipients: adminIds,
+      message: "New incident created",
+      incidentId: incident._id,
+      type: "incident"
     });
 
     res.status(201).json({
@@ -100,6 +117,13 @@ export const assignLead = async (req, res) => {
       createdBy: req.user._id
     });
 
+    await createNotification({
+      recipients: [teamLeadId],
+      message: "You have been assigned as team lead",
+      incidentId: incident._id,
+      type: "assignment"
+    });
+
     res.status(200).json({
       success: true,
       data: incident
@@ -132,6 +156,13 @@ export const assignResponders = async (req, res) => {
       createdBy: req.user._id
     });
 
+    await createNotification({
+      recipients: responders,
+      message: "You have been assigned as responder",
+      incidentId: incident._id,
+      type: "assignment"
+    });
+
     res.status(200).json({
       success: true,
       data: incident
@@ -162,6 +193,25 @@ export const updateStatus = async (req, res) => {
       type: "status",
       createdBy: req.user._id
     });
+
+    const admin = await User.findOne({ role: "admin" }).select("_id");
+    const adminIds = [admin._id];
+
+    const notifyUsers = [
+      incident.assignedLead,
+      ...incident.responders,
+      ...adminIds
+    ].filter(Boolean);
+
+    const uniqueUsers = [...new Set(notifyUsers.map(id => id.toString()))];
+
+    await createNotification({
+      recipients: uniqueUsers,
+      message: `Status updated to ${status}`,
+      incidentId: incident._id,
+      type: "status"
+    });
+
 
     res.status(200).json({
       success: true,
