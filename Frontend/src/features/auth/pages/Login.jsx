@@ -1,5 +1,5 @@
 
-import { useState } from "react"
+import { use, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -7,6 +7,7 @@ import { Eye, EyeOff, Lock, Mail } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useSelector } from "react-redux"
 
 import {
   Form,
@@ -34,7 +35,9 @@ export default function Login() {
     },
   })
 
+
   const { mutate, isPending } = useLogin()
+  const {user} = useSelector((state) => state.auth)
 
   const onSubmit = (values) => {
     if(values){
@@ -54,7 +57,7 @@ export default function Login() {
           </div>
 
           <h1 className="text-2xl font-semibold text-foreground">
-            Welcome Back
+            Welcome Back {user ? user.name : "USER"}
           </h1>
 
           <p className="mt-1 text-sm text-muted-foreground">
