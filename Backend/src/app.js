@@ -7,11 +7,16 @@ import authRoutes from "./routes/auth.routes.js";
 import incidentRoutes from "./routes/incident.routes.js";
 import timelineRoutes from "./routes/timeline.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
+import { config } from './config/config.js';
 
 const app = express();
 
 //Middlewares
-app.use(cors());
+app.use(cors({
+  origin: config.CLIENT_URL,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+}));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
