@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, Clock, Activity, ShieldAlert, AlertTriangle, 
@@ -9,20 +9,14 @@ import {
   ChevronRight, ArrowUpRight, Share2, MoreHorizontal, Send, RefreshCw
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
-import API from '../../../services/api';
+import { api } from '@/lib/axios';
+import { socket, joinIncidentRoom, leaveIncidentRoom } from '@/lib/socket';
 
 export default function IncidentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { token, user } = useSelector(state => state.auth);
+  const { access_token, user } = useSelector(state => state.auth);
   const userRole = user?.role?.toLowerCase();
-  
-  // Check if current user is the TL of the group this incident belongs to
-  const isOurGroup = userRole === 'teamlead' && (
-    incident?.project?.group === user?.groupId || 
-    incident?.project?.groupId === user?.groupId ||
-    incident?.project?.group?._id === user?.groupId
-  );
   
   const [incident, setIncident] = useState(null);
   const [timeline, setTimeline] = useState([]);
@@ -31,17 +25,38 @@ export default function IncidentDetail() {
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
   const [newUpdate, setNewUpdate] = useState({ message: '', type: 'update' });
   const [submittingUpdate, setSubmittingUpdate] = useState(false);
+  const [aiInsights, setAiInsights] = useState({});
+
+  // Check if current user is the TL of the group this incident belongs to
+  const isOurGroup = userRole === 'teamlead' && (
+    incident?.project?.group === user?.groupId ||
+    incident?.project?.groupId === user?.groupId ||
+    incident?.project?.group?._id === user?.groupId
+  );
 
   useEffect(() => {
     fetchIncidentDetails();
+
+    // Subscribe to real-time AI insight events for this incident
+    joinIncidentRoom(id);
+    socket.on('ai:rootCause',  (data) => setAiInsights((p) => ({ ...p, rootCause: data.rootCause })));
+    socket.on('ai:nextAction', (data) => setAiInsights((p) => ({ ...p, nextAction: data.nextAction })));
+    socket.on('ai:postmortem', (data) => setAiInsights((p) => ({ ...p, postmortem: data.postmortem })));
+
+    return () => {
+      leaveIncidentRoom(id);
+      socket.off('ai:rootCause');
+      socket.off('ai:nextAction');
+      socket.off('ai:postmortem');
+    };
   }, [id]);
 
   const fetchIncidentDetails = async () => {
     try {
       setLoading(true);
       const [incRes, timeRes] = await Promise.all([
-        API.get(`/incidents/${id}`),
-        API.get(`/timelines/${id}/timeline`)
+        api.get(`/incidents/${id}`),
+        api.get(`/incidents/${id}/timeline`)
       ]);
       setIncident(incRes.data.data);
       setTimeline(timeRes.data.data);
@@ -57,7 +72,7 @@ export default function IncidentDetail() {
     if (!newUpdate.message.trim()) return;
     try {
       setSubmittingUpdate(true);
-      await API.post(`/timelines/${id}/timeline`, newUpdate);
+      await api.post(`/incidents/${id}/timeline`, newUpdate);
       setNewUpdate({ message: '', type: 'update' });
       setIsTimelineModalOpen(false);
       fetchIncidentDetails();
@@ -71,7 +86,7 @@ export default function IncidentDetail() {
   const handleResolve = async () => {
     if (!window.confirm("Are you sure you want to resolve this incident?")) return;
     try {
-      await API.patch(`/incidents/${id}/status`, { status: 'resolved' });
+      await api.patch(`/incidents/${id}/status`, { status: 'resolved' });
       fetchIncidentDetails();
     } catch (err) {
       alert("Failed to resolve incident: " + err.message);
@@ -234,18 +249,33 @@ export default function IncidentDetail() {
               
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <h4 className="text-[10px] font-semibold text-indigo-300/50 uppercase tracking-widest">Root Cause Hypothesis</h4>
+                  <h4 className="text-[10px] font-semibold text-indigo-300/50 uppercase tracking-widest flex items-center gap-1.5">
+                    Root Cause
+                    {aiInsights.rootCause && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />}
+                  </h4>
                   <p className="text-sm font-medium text-indigo-100/90 leading-snug">
-                    {incident.aiInsights?.rootCause || "Analyzing logs for potential root cause patterns..."}
+                    {aiInsights.rootCause || incident.aiInsights?.rootCause || "Analyzing logs for potential root cause patterns..."}
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="text-[10px] font-semibold text-indigo-300/50 uppercase tracking-widest">Remediation Steps</h4>
+                  <h4 className="text-[10px] font-semibold text-indigo-300/50 uppercase tracking-widest flex items-center gap-1.5">
+                    Next Action
+                    {aiInsights.nextAction && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />}
+                  </h4>
                   <p className="text-sm font-medium text-indigo-100/90 leading-snug">
-                    {incident.aiInsights?.solution || "Calculating optimal recovery sequence based on historical resolution data."}
+                    {aiInsights.nextAction || incident.aiInsights?.solution || "Calculating optimal recovery sequence..."}
                   </p>
                 </div>
+
+                {(aiInsights.postmortem || incident.aiInsights?.postmortem) && (
+                  <div className="space-y-2 pt-4 border-t border-indigo-500/20">
+                    <h4 className="text-[10px] font-semibold text-indigo-300/50 uppercase tracking-widest">Postmortem</h4>
+                    <p className="text-xs font-medium text-indigo-100/70 leading-snug">
+                      {aiInsights.postmortem || incident.aiInsights?.postmortem}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

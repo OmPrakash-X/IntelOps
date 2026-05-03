@@ -10,7 +10,7 @@ import { store } from './apps/app.store'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>
-      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <QueryProvider>
           <App />
         </QueryProvider>

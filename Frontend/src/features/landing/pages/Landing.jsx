@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router';
 import { 
   Shield, ArrowRight, Sparkles, Activity, 
   Zap, ChevronRight, Check, Play, Lock, 
@@ -70,7 +70,7 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 selection:bg-indigo-100 overflow-x-hidden font-['Inter'] relative">
+    <div className="light min-h-screen bg-white text-slate-900 selection:bg-indigo-100 overflow-x-hidden font-['Inter'] relative" style={{ colorScheme: 'light' }}>
       {/* Dynamic Background Glow */}
       <motion.div 
         animate={{
@@ -219,7 +219,7 @@ const Landing = () => {
           <motion.button 
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/account/login')}
             className="px-6 py-3 rounded-xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl flex items-center gap-2 group"
           >
             <Lock size={14} className="group-hover:rotate-12 transition-transform" />

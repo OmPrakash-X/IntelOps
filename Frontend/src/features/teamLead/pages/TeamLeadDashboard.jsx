@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router';
 import { 
   Bell, LogOut, LayoutDashboard, AlertCircle, 
   Users, Plus, ArrowRight, Activity, 
@@ -8,7 +8,7 @@ import {
   Search, Shield, X, UserPlus, Filter, ChevronDown, ChevronRight, RefreshCw
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
-import { logout } from '../../auth/authSlice';
+import { logout } from '@/features/auth/auth.slice';
 import { fetchIncidents } from '../../incidents/incidentSlice';
 import { fetchProjects } from '../../project/projectSlice';
 import { fetchGroups } from '../../groups/groupSlice';
@@ -78,7 +78,7 @@ const TeamLeadDashboard = () => {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/login');
+    navigate('/account/login');
   };
 
   const handleAddMembers = async () => {
@@ -148,7 +148,7 @@ const TeamLeadDashboard = () => {
     <div className="space-y-10">
 
         <div className="max-w-7xl mx-auto px-8 py-10 space-y-10">
-          {(location.pathname === '/team-lead' || location.pathname === '/team-lead/group') && (
+          {(location.pathname === '/team/dashboard' || location.pathname === '/team/dashboard/group') && (
             <section className="p-8 rounded-xl bg-slate-900 border border-slate-800 relative overflow-hidden group">
               <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
@@ -189,7 +189,7 @@ const TeamLeadDashboard = () => {
             </section>
           )}
 
-          {location.pathname === '/team-lead' && (
+          {location.pathname === '/team/dashboard' && (
             <>
               {/* STATS ROW */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -255,7 +255,7 @@ const TeamLeadDashboard = () => {
             </>
           )}
 
-          {location.pathname === '/team-lead/notifications' && (
+          {location.pathname === '/team/dashboard/notifications' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">Notifications</h2>
@@ -274,7 +274,7 @@ const TeamLeadDashboard = () => {
             </div>
           )}
 
-          {(location.pathname === '/team-lead' || location.pathname === '/team-lead/incidents') && (
+          {(location.pathname === '/team/dashboard' || location.pathname === '/team/dashboard/issues') && (
             <section className="space-y-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
                 <div className="flex items-center gap-4">
@@ -336,7 +336,7 @@ const TeamLeadDashboard = () => {
                         <div className="flex -space-x-1.5">
                           {(incident.responders || []).slice(0, 3).map((r, i) => (
                             <div key={i} className="w-6 h-6 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[7px] font-bold" title={r.username}>
-                              {r.username[0].toUpperCase()}
+                              {r.username?.[0]?.toUpperCase() ?? '?'}
                             </div>
                           ))}
                           {(incident.responders || []).length > 3 && (
@@ -525,7 +525,7 @@ const TeamLeadDashboard = () => {
                         >
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 font-bold text-[9px]">
-                              {u.username?.[0].toUpperCase()}
+                              {u.username?.[0]?.toUpperCase() ?? '?'}
                             </div>
                             <div>
                               <div className="text-xs font-semibold">{u.username}</div>

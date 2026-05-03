@@ -14,6 +14,11 @@ export const adminRoutes = [
     icon: LayoutDashboard,
   },
   {
+    title: "Teams",
+    href: "/admin/dashboard/teams",
+    icon: Users,
+  },
+  {
     title: "Buggers",
     href: "/admin/dashboard/buggers",
     icon: Bug,
