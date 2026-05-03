@@ -87,6 +87,10 @@ const incidentSchema = new mongoose.Schema({
   aiSuggestions: {
     nextAction: String,
     timelineSummary: String,
+    generatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    },
     generatedAt: Date
   }
 

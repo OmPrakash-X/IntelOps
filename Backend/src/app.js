@@ -9,6 +9,7 @@ import timelineRoutes from "./routes/timeline.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import projectRoutes from "./routes/project.routes.js";
 import groupRoutes from "./routes/group.routes.js";
+import aiRoutes from "./routes/ai.routes.js";
 import { config } from './config/config.js';
 
 const app = express();
@@ -36,5 +37,6 @@ app.use("/api/incidents", timelineRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/ai", aiRoutes);
 
 export default app;
