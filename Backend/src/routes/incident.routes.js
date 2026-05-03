@@ -4,7 +4,9 @@ import {
   getIncidents,
   getIncidentById,
   assignResponders,
-  updateStatus
+  updateStatus,
+  resolveIncident,
+  updatePostmortem
 } from "../controllers/incident.controller.js";
 
 import { protect } from "../middlewares/auth.middleware.js";
@@ -55,6 +57,18 @@ router.patch(
   protect,
   validateUpdateStatus,
   updateStatus
+);
+
+router.patch(
+  "/:id/resolve",
+  protect,
+  resolveIncident
+);
+
+router.patch(
+  "/:id/postmortem",
+  protect,
+  updatePostmortem
 );
 
 export default router;

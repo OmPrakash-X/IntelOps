@@ -81,12 +81,33 @@ const incidentSchema = new mongoose.Schema({
     summary: String,
     rootCause: String,
     impact: String,
-    resolution: String
+    resolution: String,
+    // AI-generated additions
+    lessonsLearned: [String],
+    preventionSteps: [String],
+    aiTimeline: [
+      {
+        time: String,
+        event: String
+      }
+    ],
+    generatedAt: Date
   },
 
   aiSuggestions: {
+    // Stored as JSON strings — parsed on the frontend
+    // rootCause: matches rootCauseSchema from ai/schemas.js
+    rootCause: String,
+    // nextAction: matches nextActionSchema from ai/schemas.js
     nextAction: String,
+    // Legacy field kept for backward compatibility
     timelineSummary: String,
+    // Who manually triggered the AI (if manually run)
+    generatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    },
+    // Timestamp of the last successful AI analysis run
     generatedAt: Date
   }
 
