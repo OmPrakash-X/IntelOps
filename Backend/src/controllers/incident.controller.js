@@ -3,6 +3,7 @@ import Timeline from "../models/timeline.model.js";
 import { createNotification } from "../utils/notification.util.js";
 import User from "../models/user.model.js";
 import Project from "../models/project.model.js";
+import { runPostmortem } from "../ai/ai.service.js";
 
 export const createIncident = async (req, res) => {
   try {
@@ -199,9 +200,17 @@ export const updateStatus = async (req, res) => {
   try {
     const { status } = req.body;
 
+    const updateData = { status };
+
+    // When resolving, record who resolved it and when
+    if (status === "resolved") {
+      updateData.resolvedBy = req.user._id;
+      updateData.resolvedAt = new Date();
+    }
+
     const incident = await Incident.findByIdAndUpdate(
       req.params.id,
-      { status },
+      updateData,
       { new: true }
     );
 
@@ -235,6 +244,15 @@ export const updateStatus = async (req, res) => {
       success: true,
       data: incident
     });
+
+    // Fire-and-forget: Generate AI postmortem AFTER response is sent
+    // Only triggers when incident is fully resolved
+    if (status === "resolved") {
+      runPostmortem(incident._id).catch((err) =>
+        console.error("[AI] Postmortem generation error:", err.message)
+      );
+    }
+
 
   } catch (err) {
     res.status(500).json({

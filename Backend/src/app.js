@@ -34,6 +34,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use("/api/incidents", timelineRoutes);
+app.use("/api/incidents", aiRoutes);  // AI routes: /api/incidents/:id/ai/*
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/groups", groupRoutes);
