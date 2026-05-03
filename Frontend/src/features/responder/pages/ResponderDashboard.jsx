@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   Bell, LogOut, LayoutDashboard, AlertCircle, 
   Clock, Shield, Send, Terminal, 
@@ -8,7 +8,7 @@ import {
   CheckCircle, Zap, ArrowRight, MessageCircle, MoreVertical, Plus
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
-import { logout } from '@/features/auth/auth.slice';
+import { logout } from '../../auth/authSlice';
 import { fetchIncidents } from '../../incidents/incidentSlice';
 import { 
   addTimelineUpdate, getNotifications 
@@ -48,7 +48,7 @@ const ResponderDashboard = () => {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/account/login');
+    navigate('/login');
   };
 
   const handleSubmitUpdate = async (incidentId) => {

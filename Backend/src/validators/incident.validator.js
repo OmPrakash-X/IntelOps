@@ -25,12 +25,12 @@ export const validateCreateIncident = [
     .withMessage("Invalid severity"),
 
   body("description")
-    .optional()
+    .optional({ checkFalsy: true })
     .isLength({ min: 10 })
     .withMessage("Description must be at least 10 characters"),
 
-  body("project")
-    .optional()
+  body("projectId")
+    .notEmpty().withMessage("Project ID is required")
     .isMongoId().withMessage("Invalid project ID"),
 
   validateRequest

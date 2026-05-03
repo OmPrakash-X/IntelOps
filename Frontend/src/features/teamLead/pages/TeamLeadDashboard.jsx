@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, Link, useLocation } from 'react-router';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Bell, LogOut, LayoutDashboard, AlertCircle, 
   Users, Plus, ArrowRight, Activity, 
@@ -8,7 +8,7 @@ import {
   Search, Shield, X, UserPlus, Filter, ChevronDown, ChevronRight, RefreshCw
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
-import { logout } from '@/features/auth/auth.slice';
+import { logout } from '../../auth/authSlice';
 import { fetchIncidents } from '../../incidents/incidentSlice';
 import { fetchProjects } from '../../project/projectSlice';
 import { fetchGroups } from '../../groups/groupSlice';
@@ -42,6 +42,8 @@ const TeamLeadDashboard = () => {
   const [activeFilter, setActiveFilter] = useState('All');
   const [selectedProjectId, setSelectedProjectId] = useState('All');
   const [notifications, setNotifications] = useState([]);
+  const [openStatusMenu, setOpenStatusMenu] = useState(null); // incidentId with open dropdown
+  const [updatingStatus, setUpdatingStatus] = useState(null); // incidentId being updated
   
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
   const [isAssignRespondersModalOpen, setIsAssignRespondersModalOpen] = useState(false);
@@ -50,8 +52,11 @@ const TeamLeadDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Find the group led by this user
-  const myGroup = groups.find(g => g.teamLead?._id === user?._id || g.teamLead === user?._id);
+  const myUserId = user?._id || user?.id;
+  const myGroup = groups.find(g =>
+    g.teamLead?._id?.toString() === myUserId?.toString() ||
+    g.teamLead?.toString() === myUserId?.toString()
+  );
 
   useEffect(() => {
     dispatch(fetchIncidents());
@@ -78,7 +83,7 @@ const TeamLeadDashboard = () => {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/account/login');
+    navigate('/login');
   };
 
   const handleAddMembers = async () => {
@@ -105,18 +110,29 @@ const TeamLeadDashboard = () => {
       setSelectedIncident(null);
       dispatch(fetchIncidents());
     } catch (err) {
-      alert("Failed to assign responders: " + err.message);
+      alert("Failed to assign responders: " + (err.response?.data?.message || err.message));
     }
   };
 
   const handleStatusUpdate = async (id, status) => {
+    setOpenStatusMenu(null);
     try {
+      setUpdatingStatus(id);
       await updateIncidentStatus(id, status);
       dispatch(fetchIncidents());
     } catch (err) {
-      alert("Failed to update status: " + err.message);
+      alert('Failed to update status: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setUpdatingStatus(null);
     }
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const close = () => setOpenStatusMenu(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, []);
 
   const stats = {
     groupIncidents: incidents.length,
@@ -130,17 +146,15 @@ const TeamLeadDashboard = () => {
   };
 
   const filteredIncidents = incidents.filter(i => {
-    // Strict Group Filter: Only show incidents if project belongs to this TL's group
-    const isOurGroup = i.project?.group === myGroup?._id || i.project?.groupId === myGroup?._id;
-    if (!isOurGroup) return false;
-
+    // Match by the incident's own group field (not via project)
+    const isOurGroup = !myGroup || i.group?.toString() === myGroup?._id?.toString();
     const statusMatch = activeFilter === 'All' || i.status === activeFilter.toLowerCase().replace(' ', '');
-    const projectMatch = selectedProjectId === 'All' || i.project?._id === selectedProjectId;
-    return statusMatch && projectMatch;
+    const projectMatch = selectedProjectId === 'All' || i.project?._id === selectedProjectId || i.project === selectedProjectId;
+    return isOurGroup && statusMatch && projectMatch;
   });
 
   const priorityIncidents = incidents.filter(i => {
-    const isOurGroup = i.project?.group === myGroup?._id || i.project?.groupId === myGroup?._id;
+    const isOurGroup = !myGroup || i.group?.toString() === myGroup?._id?.toString();
     return isOurGroup && (i.responders || []).length === 0 && i.status !== 'resolved';
   });
 
@@ -148,7 +162,7 @@ const TeamLeadDashboard = () => {
     <div className="space-y-10">
 
         <div className="max-w-7xl mx-auto px-8 py-10 space-y-10">
-          {(location.pathname === '/team/dashboard' || location.pathname === '/team/dashboard/group') && (
+          {(location.pathname === '/team-lead' || location.pathname === '/team-lead/group') && (
             <section className="p-8 rounded-xl bg-slate-900 border border-slate-800 relative overflow-hidden group">
               <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
@@ -166,7 +180,7 @@ const TeamLeadDashboard = () => {
                       <div className="flex -space-x-2">
                         {myGroup?.teamMembers?.map((m, i) => (
                           <div key={i} className="w-7 h-7 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[9px] font-bold" title={m.username}>
-                            {m.username[0].toUpperCase()}
+                            {m.username?.[0]?.toUpperCase() ?? '?'}
                           </div>
                         ))}
                         <button 
@@ -189,7 +203,7 @@ const TeamLeadDashboard = () => {
             </section>
           )}
 
-          {location.pathname === '/team/dashboard' && (
+          {location.pathname === '/team-lead' && (
             <>
               {/* STATS ROW */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -255,7 +269,7 @@ const TeamLeadDashboard = () => {
             </>
           )}
 
-          {location.pathname === '/team/dashboard/notifications' && (
+          {location.pathname === '/team-lead/notifications' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">Notifications</h2>
@@ -274,7 +288,7 @@ const TeamLeadDashboard = () => {
             </div>
           )}
 
-          {(location.pathname === '/team/dashboard' || location.pathname === '/team/dashboard/issues') && (
+          {(location.pathname === '/team-lead' || location.pathname === '/team-lead/incidents') && (
             <section className="space-y-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
                 <div className="flex items-center gap-4">
@@ -348,29 +362,36 @@ const TeamLeadDashboard = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="relative group/status inline-block">
-                          <button className={`flex items-center gap-1.5 px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest border transition-all ${
-                            incident.status === 'open' ? 'bg-red-500/5 text-red-500 border-red-500/10' :
-                            incident.status === 'inProgress' ? 'bg-blue-500/5 text-blue-500 border-blue-500/10' :
-                            'bg-emerald-500/5 text-emerald-500 border-emerald-500/10'
-                          }`}>
-                            {incident.status} <ChevronDown size={12} />
+                        <div className="relative" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={() => setOpenStatusMenu(openStatusMenu === incident._id ? null : incident._id)}
+                            disabled={updatingStatus === incident._id}
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest border transition-all ${
+                              incident.status === 'open'       ? 'bg-red-500/5 text-red-500 border-red-500/10' :
+                              incident.status === 'inProgress' ? 'bg-blue-500/5 text-blue-500 border-blue-500/10' :
+                              'bg-emerald-500/5 text-emerald-500 border-emerald-500/10'
+                            }`}>
+                            {updatingStatus === incident._id
+                              ? <RefreshCw size={10} className="animate-spin" />
+                              : <>{incident.status} <ChevronDown size={12} /></>}
                           </button>
-                          <div className="absolute top-full left-0 mt-1 w-32 bg-slate-900 border border-slate-800 rounded-lg shadow-xl opacity-0 invisible group-hover/status:opacity-100 group-hover/status:visible transition-all z-50 overflow-hidden">
-                            {[
-                              { label: 'Investigating', val: 'inProgress' },
-                              { label: 'Identified', val: 'inProgress' },
-                              { label: 'Resolved', val: 'resolved' }
-                            ].map(st => (
-                              <button 
-                                key={st.label}
-                                onClick={() => handleStatusUpdate(incident._id, st.val)}
-                                className="w-full text-left px-4 py-2 text-[9px] font-semibold uppercase tracking-widest hover:bg-slate-800 text-slate-400 hover:text-white"
-                              >
-                                {st.label}
-                              </button>
-                            ))}
-                          </div>
+                          {openStatusMenu === incident._id && incident.status !== 'resolved' && (
+                            <div className="absolute top-full left-0 mt-1 w-36 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+                              {[
+                                { label: 'Open',        val: 'open' },
+                                { label: 'In Progress', val: 'inProgress' },
+                                { label: 'Resolved',    val: 'resolved' },
+                              ].filter(s => s.val !== incident.status).map(st => (
+                                <button
+                                  key={st.val}
+                                  onClick={() => handleStatusUpdate(incident._id, st.val)}
+                                  className="w-full text-left px-4 py-2.5 text-[9px] font-bold uppercase tracking-widest hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                                >
+                                  → {st.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-[10px] font-medium text-slate-500">
@@ -452,7 +473,7 @@ const TeamLeadDashboard = () => {
                     if (isAddMemberModalOpen) {
                       // Correct filter: Exclude current teamLead, Exclude users already in group
                       const assignedUserIds = groups.reduce((acc, g) => {
-                        const memberIds = (g.teamMembers || []).map(m => m._id || m);
+                        const memberIds = (g.members || []).map(m => m._id || m);
                         const leadId = g.teamLead?._id || g.teamLead;
                         return [...acc, ...memberIds, leadId];
                       }, []);
@@ -502,7 +523,7 @@ const TeamLeadDashboard = () => {
                       ));
                     } else {
                       // Incident Assignment (Show my team members)
-                      const myTeam = myGroup?.teamMembers || [];
+                      const myTeam = myGroup?.members || [];
                       const filtered = myTeam.filter(u => u.username?.toLowerCase().includes(searchQuery.toLowerCase()));
                       
                       if (filtered.length === 0) {

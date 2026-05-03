@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../features/auth/authSlice';
+import { getSocket } from '../../lib/socket';
+import API from '../../services/api';
 
 const sidebarConfigs = {
   admin: [
@@ -48,6 +50,46 @@ const DashboardLayout = () => {
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [notifications, setNotifications] = useState([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
+
+  const unread = notifications.filter(n => !n.isRead).length;
+
+  // fetch notifications
+  const loadNotifs = async () => {
+    try {
+      const res = await API.get('/notifications');
+      setNotifications(res.data?.data || res.data || []);
+    } catch { /* silent */ }
+  };
+
+  useEffect(() => { loadNotifs(); }, []);
+
+  // live socket updates
+  useEffect(() => {
+    const socket = getSocket();
+    const handleNew = () => loadNotifs();
+    socket.on('new_notification', handleNew);
+    socket.on('notification', handleNew);
+    return () => {
+      socket.off('new_notification', handleNew);
+      socket.off('notification', handleNew);
+    };
+  }, []);
+
+  // close on outside click
+  useEffect(() => {
+    const handler = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const markAllRead = async () => {
+    const unreadIds = notifications.filter(n => !n.isRead).map(n => n._id);
+    await Promise.all(unreadIds.map(nid => API.patch(`/notifications/${nid}/read`).catch(() => {})));
+    loadNotifs();
+  };
 
   const role = (user?.role || user?.user?.role)?.toLowerCase();
   const navItems = sidebarConfigs[role] || [];
@@ -183,15 +225,48 @@ const DashboardLayout = () => {
             <h2 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em]">{getPageTitle()}</h2>
           </div>
           <div className="flex items-center gap-6">
-            <button className="relative p-2 text-slate-500 hover:text-white transition-colors">
-              <Bell size={20} />
-              <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-indigo-500 border-2 border-slate-950" />
-            </button>
-            <div className="h-8 w-px bg-white/10" />
-            <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-xl border border-white/5">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Live Engine</span>
-            </div>
+              {/* Live Notifications Bell */}
+              <div className="relative" ref={notifRef}>
+                <button onClick={() => setNotifOpen(!notifOpen)}
+                  className="relative p-2 text-slate-500 hover:text-white transition-colors">
+                  <Bell size={20} />
+                  {unread > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-indigo-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center">
+                      {unread > 9 ? '9+' : unread}
+                    </span>
+                  )}
+                </button>
+                {notifOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-50">
+                    <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-800">
+                      <span className="text-xs font-bold uppercase tracking-widest text-white">Notifications</span>
+                      {unread > 0 && (
+                        <button onClick={markAllRead} className="text-[9px] font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors">Mark all read</button>
+                      )}
+                    </div>
+                    <div className="max-h-80 overflow-y-auto divide-y divide-slate-800/50">
+                      {notifications.length === 0 ? (
+                        <div className="py-10 text-center text-xs text-slate-600">No notifications yet.</div>
+                      ) : notifications.slice(0, 15).map((n, i) => (
+                        <div key={n._id || i} className={`px-5 py-3.5 hover:bg-slate-800/30 transition-colors ${!n.isRead ? 'bg-indigo-600/5' : ''}`}>
+                          <div className="flex items-start gap-3">
+                            {!n.isRead && <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />}
+                            <div className={!n.isRead ? '' : 'ml-4'}>
+                              <p className="text-xs font-medium text-slate-300 leading-snug">{n.message}</p>
+                              <p className="text-[9px] text-slate-600 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="h-8 w-px bg-white/10" />
+              <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-xl border border-white/5">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Live Engine</span>
+              </div>
           </div>
         </header>
 

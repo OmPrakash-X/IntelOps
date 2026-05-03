@@ -1,13 +1,19 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_BACKEND_API;
+const BASE = import.meta.env.VITE_BACKEND_API || "http://localhost:3000";
 
 export const api = axios.create({
-  baseURL: `${API_URL}/api`,
-  headers: {
-    "Content-Type": "application/json",
-    "Cache-Control": "no-cache",
-    Pragma: "no-cache",
-  },
+  baseURL: `${BASE}/api`,
   withCredentials: true,
 });
+
+// Read token from localStorage — avoids circular import with the Redux store
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export default api;

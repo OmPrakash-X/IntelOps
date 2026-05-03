@@ -1,12 +1,14 @@
 import { Server } from "socket.io";
+import { config } from "../config/config.js";
 
 let io;
 
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: "*",
-      methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
+      origin: config.CLIENT_URL,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+      credentials: true
     }
   });
 

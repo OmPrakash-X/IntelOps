@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   Shield, ArrowRight, Sparkles, Activity, 
   Zap, ChevronRight, Check, Play, Lock, 
@@ -8,7 +8,9 @@ import {
   Box, Cpu, Globe, ArrowUpRight,
   Users,Clock,Database
 } from 'lucide-react';
-import { incidents } from './dashboardData';
+import axios from 'axios';
+
+const BASE = import.meta.env.VITE_BACKEND_API || 'http://localhost:3000';
 
 // --- Animated Counter ---
 const Counter = ({ end, suffix = "", delay = 0 }) => {
@@ -56,6 +58,18 @@ const Landing = () => {
   const navigate = useNavigate();
   const [isAnnual, setIsAnnual] = useState(true);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [incidents, setIncidents] = useState([]);
+  const [incLoading, setIncLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    axios.get(`${BASE}/api/incidents`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then(res => setIncidents(res.data?.data || res.data || []))
+      .catch(() => setIncidents([]))
+      .finally(() => setIncLoading(false));
+  }, []);
 
   const handleMouseMove = (e) => {
     const { clientX, clientY } = e;
@@ -70,7 +84,7 @@ const Landing = () => {
   };
 
   return (
-    <div className="light min-h-screen bg-white text-slate-900 selection:bg-indigo-100 overflow-x-hidden font-['Inter'] relative" style={{ colorScheme: 'light' }}>
+    <div className="min-h-screen bg-white text-slate-900 selection:bg-indigo-100 overflow-x-hidden font-['Inter'] relative">
       {/* Dynamic Background Glow */}
       <motion.div 
         animate={{
@@ -219,7 +233,7 @@ const Landing = () => {
           <motion.button 
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/account/login')}
+            onClick={() => navigate('/login')}
             className="px-6 py-3 rounded-xl bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl flex items-center gap-2 group"
           >
             <Lock size={14} className="group-hover:rotate-12 transition-transform" />
@@ -243,7 +257,7 @@ const Landing = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span style={{ animation: 'pulse 2s infinite' }} className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
               </span>
-              LIVE: 2 Active Incidents
+              LIVE: {incidents.filter(i => i.status !== 'resolved').length} Active Incident{incidents.filter(i => i.status !== 'resolved').length !== 1 ? 's' : ''}
             </div>
 
             <h1 className="text-6xl md:text-7xl xl:text-8xl font-['Plus_Jakarta_Sans'] font-black leading-[1.05] tracking-tighter mb-8 text-slate-900">
@@ -538,6 +552,27 @@ const Landing = () => {
             </div>
           </div>
 
+          {incLoading ? (
+            <div className="space-y-4">
+              {[1,2,3].map(i => (
+                <div key={i} className="flex items-center gap-10 p-8 rounded-[24px] border border-slate-100 bg-white animate-pulse">
+                  <div className="w-4 h-4 rounded-full bg-slate-200" />
+                  <div className="flex-1 space-y-3">
+                    <div className="h-5 bg-slate-200 rounded w-2/3" />
+                    <div className="h-3 bg-slate-100 rounded w-1/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : incidents.length === 0 ? (
+            <div className="p-20 text-center border border-slate-100 rounded-[32px] bg-white">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-6">
+                <Activity size={28} className="text-emerald-500" />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 mb-2">All Systems Operational</h3>
+              <p className="text-slate-400 font-medium text-sm">No active incidents at this time.</p>
+            </div>
+          ) : (
           <motion.div 
             initial="hidden"
             whileInView="visible"
@@ -547,45 +582,52 @@ const Landing = () => {
             }}
             className="space-y-4"
           >
-            {incidents.slice(0, 5).map((incident, i) => (
+            {incidents.slice(0, 5).map((incident, i) => {
+              const sev = incident.severity === 'high' ? 'P1' : incident.severity === 'medium' ? 'P2' : 'P3';
+              return (
               <motion.div 
-                key={incident.id}
+                key={incident._id}
                 variants={{
                   hidden: { opacity: 0, y: 10 },
                   visible: { opacity: 1, y: 0 }
                 }}
                 whileHover={{ scale: 1.005, x: 10 }}
-                onClick={() => navigate(`/incident/${incident.id}`)}
+                onClick={() => navigate(`/incident/${incident._id}`)}
                 className={`group flex items-center justify-between p-8 rounded-[24px] border border-slate-100 cursor-pointer transition-all bg-white hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/5`}
               >
                 <div className="flex items-center gap-10">
                   <div className="flex flex-col items-center gap-2">
                     <div className={`w-3.5 h-3.5 rounded-full ${
-                      incident.severity === 'P1' ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse' : 
-                      incident.severity === 'P2' ? 'bg-amber-500' : 'bg-blue-500'
+                      sev === 'P1' ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse' : 
+                      sev === 'P2' ? 'bg-amber-500' : 'bg-blue-500'
                     }`} />
-                    <span className="text-[10px] font-black text-slate-400">{incident.updatedAt}</span>
+                    <span className="text-[10px] font-black text-slate-400">{new Date(incident.createdAt).toLocaleTimeString()}</span>
                   </div>
                   <div>
                     <div className="flex items-center gap-5 mb-2">
                       <h4 className="text-xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors tracking-tight">{incident.title}</h4>
                       <div className="flex items-center gap-2">
                         <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-lg tracking-widest border ${
-                          incident.severity === 'P1' ? 'bg-red-50 border-red-100 text-red-600' : 
-                          incident.severity === 'P2' ? 'bg-amber-50 border-amber-100 text-amber-600' : 'bg-blue-50 border-blue-100 text-blue-600'
+                          sev === 'P1' ? 'bg-red-50 border-red-100 text-red-600' : 
+                          sev === 'P2' ? 'bg-amber-50 border-amber-100 text-amber-600' : 'bg-blue-50 border-blue-100 text-blue-600'
                         }`}>
-                          {incident.id} • {incident.severity}
+                          {sev}
                         </span>
-                        {i === 0 && (
+                        <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-lg tracking-widest border ${
+                          incident.status === 'resolved' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-100 border-slate-200 text-slate-600'
+                        }`}>
+                          {incident.status}
+                        </span>
+                        {incident.status !== 'resolved' && i === 0 && (
                           <div className="flex items-center gap-2 px-3 py-1 bg-slate-900 text-white text-[9px] font-black uppercase rounded-lg tracking-[0.2em]">
-                            <Zap size={10} className="text-indigo-400" /> Remediating
+                            <Zap size={10} className="text-indigo-400" /> Active
                           </div>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-8 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                      <span className="flex items-center gap-2"><Layers size={14} className="text-slate-300" /> Layer: {incident.service}</span>
-                      <span className="flex items-center gap-2"><Globe size={14} className="text-slate-300" /> Region: US-EAST-1</span>
+                      <span className="flex items-center gap-2"><Layers size={14} className="text-slate-300" /> {incident.project?.name || 'System'}</span>
+                      <span className="flex items-center gap-2"><Users size={14} className="text-slate-300" /> {incident.createdBy?.username || 'System'}</span>
                     </div>
                   </div>
                 </div>
@@ -595,8 +637,9 @@ const Landing = () => {
                   </div>
                 </div>
               </motion.div>
-            ))}
+            )})}
           </motion.div>
+          )}
         </div>
       </section>
 

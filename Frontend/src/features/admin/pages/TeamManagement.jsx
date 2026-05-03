@@ -40,7 +40,7 @@ const TeamManagement = () => {
     const userId = u._id;
     const group = groups.find(g => 
       (g.teamLead?._id === userId || g.teamLead === userId) || 
-      (g.teamMembers || []).some(m => (m._id === userId || m === userId))
+      (g.members || []).some(m => (m._id === userId || m === userId))
     );
     return group ? group.name : 'Unassigned';
   };
@@ -243,7 +243,7 @@ const TeamManagement = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Members</p>
-                    <span className="text-xs font-black text-white">{(group.teamMembers || []).length}</span>
+                    <span className="text-xs font-black text-white">{(group.members || []).length}</span>
                   </div>
                 </div>
               </div>
@@ -308,12 +308,13 @@ const TeamManagement = () => {
                           <select 
                             value={newUser.role}
                             onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                            className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold focus:border-indigo-500 outline-none transition-all appearance-none"
+                            style={{ colorScheme: 'dark' }}
+                            className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-6 py-4 text-sm font-bold text-white focus:border-indigo-500 outline-none transition-all appearance-none"
                           >
-                            <option value="admin">Admin</option>
-                            <option value="teamLead">Team Lead</option>
-                            <option value="bugger">Bugger</option>
-                            <option value="teamMember">Member</option>
+                            <option value="admin"   style={{background:'#020617',color:'white'}}>Admin</option>
+                            <option value="teamLead" style={{background:'#020617',color:'white'}}>Team Lead</option>
+                            <option value="bugger"   style={{background:'#020617',color:'white'}}>Bugger</option>
+                            <option value="teamMember" style={{background:'#020617',color:'white'}}>Member</option>
                           </select>
                         </div>
                       </div>

@@ -66,7 +66,7 @@ export const triggerAnalysis = async (req, res) => {
       message: "AI analysis triggered. Results will arrive via Socket.io: ai:rootCause and ai:nextAction",
     });
 
-    runIncidentAnalysis(incident._id).catch((err) =>
+    runIncidentAnalysis(incident._id, { force: true }).catch((err) =>
       console.error("[AI] Manual trigger error:", err.message)
     );
 

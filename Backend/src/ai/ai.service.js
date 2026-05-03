@@ -45,11 +45,11 @@ const loadIncidentData = async (incidentId) => {
 // 1. Incident Analysis (Root Cause + Next Action)
 //    Triggered after each new timeline event
 // ─────────────────────────────────────────────
-export const runIncidentAnalysis = async (incidentId) => {
+export const runIncidentAnalysis = async (incidentId, { force = false } = {}) => {
   const id = incidentId.toString();
 
-  // Skip if within cooldown window
-  if (isOnCooldown(id)) {
+  // Skip if within cooldown window (unless forced by manual trigger)
+  if (!force && isOnCooldown(id)) {
     console.log(`[AI] Skipping analysis for ${id} — cooldown active`);
     return;
   }

@@ -18,7 +18,7 @@ const app = express();
 app.use(cors({
   origin: config.CLIENT_URL,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
 }));
 app.use(morgan('dev'));
 app.use(express.json());

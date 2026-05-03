@@ -19,7 +19,7 @@ export const validateAddTimeline = [
     .isLength({ min: 3 }).withMessage("Message too short"),
 
   body("type")
-    .isIn(["info", "action", "status"])
+    .isIn(["update", "action", "status"])
     .withMessage("Invalid type"),
 
   body("isPublic")

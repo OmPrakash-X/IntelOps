@@ -1,84 +1,51 @@
-import { api } from "@/lib/axios";
+import API from "../../../services/api";
 
-// ─── Incidents ────────────────────────────────────────────────────────────────
 export const getIncidents = async () => {
-  const res = await api.get("/incidents");
-  return res.data;
-};
-
-export const getIncidentById = async (id) => {
-  const res = await api.get(`/incidents/${id}`);
+  const res = await API.get("/incidents");
   return res.data;
 };
 
 export const createIncident = async (data) => {
-  const res = await api.post("/incidents", data);
+  const res = await API.post("/incidents", data);
   return res.data;
 };
 
-// ─── Status & Responders ─────────────────────────────────────────────────────
-export const assignResponders = async (incidentId, responders) => {
-  const res = await api.patch(`/incidents/${incidentId}/responders`, { responders });
-  return res.data;
-};
-
-export const updateIncidentStatus = async (incidentId, status) => {
-  const res = await api.patch(`/incidents/${incidentId}/status`, { status });
-  return res.data;
-};
-
-// ─── Timeline ─────────────────────────────────────────────────────────────────
-export const getTimeline = async (incidentId) => {
-  const res = await api.get(`/incidents/${incidentId}/timeline`);
-  return res.data;
-};
-
-export const addTimelineUpdate = async (incidentId, data) => {
-  const res = await api.post(`/incidents/${incidentId}/timeline`, data);
-  return res.data;
-};
-
-// ─── Postmortem ───────────────────────────────────────────────────────────────
-export const updatePostmortem = async (incidentId, data) => {
-  const res = await api.patch(`/incidents/${incidentId}/postmortem`, data);
-  return res.data;
-};
-
-// ─── Notifications ────────────────────────────────────────────────────────────
-export const getNotifications = async () => {
-  const res = await api.get("/notifications");
-  return res.data;
-};
-
-export const markNotificationRead = async (notificationId) => {
-  const res = await api.patch(`/notifications/${notificationId}/read`);
-  return res.data;
-};
-
-// ─── Projects (used in dashboard filtering) ───────────────────────────────────
 export const getProjects = async () => {
-  const res = await api.get("/projects");
+  const res = await API.get("/projects");
   return res.data;
 };
 
-// ─── Groups ───────────────────────────────────────────────────────────────────
 export const getGroups = async () => {
-  const res = await api.get("/groups");
+  const res = await API.get("/groups");
   return res.data;
 };
 
 export const addGroupMembers = async (groupId, members) => {
-  const res = await api.patch(`/groups/${groupId}/members`, { members });
+  const res = await API.patch(`/groups/${groupId}/members`, { members });
   return res.data;
 };
 
-export const assignGroupLead = async (groupId, teamLeadId) => {
-  const res = await api.patch(`/groups/${groupId}/assign-lead`, { teamLeadId });
+export const assignResponders = async (incidentId, responders) => {
+  const res = await API.patch(`/incidents/${incidentId}/responders`, { responders });
   return res.data;
 };
 
-// ─── Users ────────────────────────────────────────────────────────────────────
+export const updateIncidentStatus = async (incidentId, status) => {
+  const res = await API.patch(`/incidents/${incidentId}/status`, { status });
+  return res.data;
+};
+
+export const addTimelineUpdate = async (incidentId, data) => {
+  const res = await API.post(`/timelines/${incidentId}/timeline`, data);
+  return res.data;
+};
+
+export const getNotifications = async () => {
+  const res = await API.get("/notifications");
+  return res.data;
+};
+
 export const getUsers = async () => {
-  const res = await api.get("/users");
+  const res = await API.get("/users");
   return res.data;
 };

@@ -20,7 +20,6 @@ router.post(
 
 router.get(
   "/:id/timeline",
-  protect,
   getTimeline
 );
 

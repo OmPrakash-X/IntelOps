@@ -1,305 +1,331 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router';
-import {
-  Plus, Activity, Clock, CheckCircle, AlertCircle,
-  Shield, ArrowRight, RefreshCw, X, Zap
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { 
+  Bell, AlertCircle, Plus, ArrowRight, Activity, 
+  Clock, CheckCircle, ShieldAlert, Layers, Send, RefreshCw, Info, X
 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchIncidents } from '@/features/incidents/incidentSlice';
-import { fetchProjects } from '@/features/project/projectSlice';
-import { createIncident } from '@/features/incidents/services/incidents.api';
+import { fetchIncidents } from '../../incidents/incidentSlice';
+import { fetchProjects } from '../../project/projectSlice';
+import { createIncident, getNotifications } from '../../incidents/services/incidents.api';
 
-const SEV_CONFIG = {
-  high:   { label: 'P1 – Critical', badge: 'bg-red-500/10 text-red-400 border-red-500/20',    dot: 'bg-red-500' },
-  medium: { label: 'P2 – High',     badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20', dot: 'bg-amber-500' },
-  low:    { label: 'P3 – Low',      badge: 'bg-blue-500/10 text-blue-400 border-blue-500/20',  dot: 'bg-blue-400' },
-};
-
-const STATUS_CONFIG = {
-  open:       { label: 'Open',       color: 'text-red-400',    bg: 'bg-red-500/10' },
-  inProgress: { label: 'In Progress', color: 'text-amber-400', bg: 'bg-amber-500/10' },
-  resolved:   { label: 'Resolved',   color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-};
-
-export default function BuggerDashboard() {
-  const navigate   = useNavigate();
-  const dispatch   = useDispatch();
-  const { user }   = useSelector((s) => s.auth);
-  const { incidents, loading } = useSelector((s) => s.incidents);
-  const { projects }           = useSelector((s) => s.projects);
-
-  // Only show incidents created by this user
-  const myIncidents = incidents.filter(
-    (i) => i.createdBy?._id === user?._id || i.createdBy === user?._id
-  );
-
-  const [isModalOpen,   setIsModalOpen]   = useState(false);
-  const [submitting,    setSubmitting]    = useState(false);
-  const [formData,      setFormData]      = useState({
-    title: '', description: '', severity: 'medium', projectId: '',
+const BuggerDashboard = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const location = useLocation();
+  const { user } = useSelector(state => state.auth);
+  const { incidents, loading: incidentsLoading } = useSelector(state => state.incidents);
+  const { projects, loading: projectsLoading } = useSelector(state => state.projects);
+  
+  const [notifications, setNotifications] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successData, setSuccessData] = useState(null);
+  
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    severity: 'P3',
+    projectId: ''
   });
 
   useEffect(() => {
     dispatch(fetchIncidents());
     dispatch(fetchProjects());
+    loadNotifications();
   }, [dispatch]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.title.trim() || !formData.projectId) return;
+  const loadNotifications = async () => {
     try {
-      setSubmitting(true);
-      await createIncident({
-        title:       formData.title,
-        description: formData.description,
-        severity:    formData.severity,
-        projectId:   formData.projectId,
-      });
-      setIsModalOpen(false);
-      setFormData({ title: '', description: '', severity: 'medium', projectId: '' });
-      dispatch(fetchIncidents());
+      const res = await getNotifications();
+      setNotifications(res.data || []);
     } catch (err) {
-      alert('Failed to report incident: ' + (err.response?.data?.message || err.message));
-    } finally {
-      setSubmitting(false);
+      console.error("Failed to fetch notifications:", err);
     }
   };
 
-  const stats = {
-    total:    myIncidents.length,
-    open:     myIncidents.filter((i) => i.status === 'open').length,
-    active:   myIncidents.filter((i) => i.status === 'inProgress').length,
-    resolved: myIncidents.filter((i) => i.status === 'resolved').length,
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setIsSubmitting(true);
+      const severityMap = { 'P1': 'high', 'P2': 'medium', 'P3': 'low' };
+      const res = await createIncident({
+        ...formData,
+        project: formData.projectId,
+        severity: severityMap[formData.severity] || 'low'
+      });
+      setSuccessData(res.data);
+      setFormData({ title: '', description: '', severity: 'P3', projectId: '' });
+      dispatch(fetchIncidents());
+    } catch (err) {
+      alert("Failed to report incident: " + (err.response?.data?.errors?.[0]?.msg || err.response?.data?.message || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  return (
-    <div className="space-y-8">
-        {/* Hero + CTA */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Incident Reports</h1>
-            <p className="text-sm text-slate-500 font-medium mt-1">
-              Report and track all issues you've raised.
-            </p>
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-indigo-600/20"
-          >
-            <Plus size={16} /> Report Incident
-          </motion.button>
-        </div>
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSuccessData(null);
+  };
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Total',      value: stats.total,    icon: Activity,     color: 'text-white' },
-            { label: 'Open',       value: stats.open,     icon: AlertCircle,  color: 'text-red-400' },
-            { label: 'In Progress',value: stats.active,   icon: Clock,        color: 'text-amber-400' },
-            { label: 'Resolved',   value: stats.resolved, icon: CheckCircle,  color: 'text-emerald-400' },
-          ].map((s, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="p-5 rounded-xl bg-slate-900 border border-slate-800"
-            >
-              <s.icon size={18} className={`${s.color} mb-3`} />
-              <div className="text-2xl font-bold mb-0.5">{s.value}</div>
-              <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest">{s.label}</div>
+  const openReportModal = (projId = '') => {
+    setFormData(prev => ({ ...prev, projectId: projId }));
+    setSuccessData(null);
+    setIsModalOpen(true);
+  };
+
+  const severityConfig = {
+    P1: { label: 'P1 - Critical', badge: 'bg-red-500/10 text-red-500 border-red-500/20', desc: 'Production down' },
+    P2: { label: 'P2 - High', badge: 'bg-amber-500/10 text-amber-500 border-amber-500/20', desc: 'Major issue affecting users' },
+    P3: { label: 'P3 - Low', badge: 'bg-blue-500/10 text-blue-500 border-blue-500/20', desc: 'Minor issue or degraded performance' },
+  };
+
+  const myIncidents = incidents.filter(i => (i.createdBy?._id === user?._id || i.createdBy === user?._id));
+
+  const stats = {
+    reportedByMe: myIncidents.length,
+    underInvestigation: myIncidents.filter(i => i.status === 'inProgress').length,
+    resolved: myIncidents.filter(i => i.status === 'resolved').length,
+    thisWeek: myIncidents.filter(i => {
+      const now = new Date();
+      const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return new Date(i.createdAt) > lastWeek;
+    }).length
+  };
+
+  const renderDashboard = () => (
+    <div className="space-y-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'My Submissions', value: stats.reportedByMe, icon: Activity, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+          { label: 'In Progress', value: stats.underInvestigation, icon: ShieldAlert, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+          { label: 'Resolved', value: stats.resolved, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+          { label: 'Last 7 Days', value: stats.thisWeek, icon: Clock, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+        ].map((stat, i) => (
+          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="p-6 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all group">
+            <div className={`w-10 h-10 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center mb-4`}>
+              <stat.icon size={20} />
+            </div>
+            <div className="text-2xl font-bold mb-0.5">{stat.value}</div>
+            <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">{stat.label}</div>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 px-1">
+          <Layers className="text-indigo-500" size={16} />
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">Available Projects</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {projects.map((proj, i) => (
+            <motion.div key={proj._id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.03 }} className="p-5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all">
+              <h3 className="text-sm font-semibold mb-1 truncate">{proj.name}</h3>
+              <p className="text-slate-500 text-[9px] font-semibold uppercase tracking-widest mb-4">Uptime: 99.9%</p>
+              <button onClick={() => openReportModal(proj._id)} className="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] font-semibold uppercase tracking-widest transition-all flex items-center justify-center gap-2 group">
+                Report <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+              </button>
             </motion.div>
           ))}
         </div>
+      </div>
 
-        {/* Incident list */}
-        <section className="space-y-4">
-          {loading && (
-            <div className="flex items-center justify-center py-20">
-              <RefreshCw size={24} className="text-indigo-500 animate-spin" />
-            </div>
-          )}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="text-red-500" size={16} />
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">Recent History</h2>
+          </div>
+          <Link to="/bugger/incidents" className="text-[10px] font-bold text-amber-500 uppercase tracking-widest hover:underline">View All</Link>
+        </div>
+        {renderIncidentsTable(myIncidents.slice(0, 5))}
+      </div>
+    </div>
+  );
 
-          {!loading && myIncidents.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-24 opacity-40">
-              <Shield size={40} className="mb-4 text-slate-500" />
-              <h3 className="font-bold mb-1">No incidents reported yet</h3>
-              <p className="text-xs text-slate-600 uppercase tracking-widest">Click "Report Incident" to start</p>
-            </div>
-          )}
-
-          {myIncidents.map((incident, i) => {
-            const sev = SEV_CONFIG[incident.severity] || SEV_CONFIG.low;
-            const st  = STATUS_CONFIG[incident.status] || STATUS_CONFIG.open;
+  const renderIncidentsTable = (data) => (
+    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <table className="w-full text-left">
+        <thead className="bg-slate-800/50">
+          <tr>
+            <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Severity</th>
+            <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Incident</th>
+            <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Status</th>
+            <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Lead</th>
+            <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Date</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-800">
+          {data.map((incident, idx) => {
+            const sev = incident.severity === 'high' ? 'P1' : incident.severity === 'medium' ? 'P2' : incident.severity === 'low' ? 'P3' : incident.severity;
+            const conf = severityConfig[sev] || severityConfig.P3;
             return (
-              <motion.div
-                key={incident._id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className="p-6 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all"
-              >
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2 flex-wrap">
-                      <span className={`px-2 py-0.5 rounded border text-[9px] font-bold uppercase tracking-widest ${sev.badge}`}>
-                        {sev.label}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${st.bg} ${st.color}`}>
-                        {st.label}
-                      </span>
-                      <span className="text-[9px] font-mono text-slate-600">#{incident._id?.slice(-6)}</span>
-                    </div>
-                    <h3 className="text-sm font-bold mb-1 truncate">{incident.title}</h3>
-                    {incident.description && (
-                      <p className="text-xs text-slate-500 font-medium line-clamp-2">{incident.description}</p>
-                    )}
-                    <div className="flex items-center gap-4 mt-3 text-[9px] font-semibold text-slate-600 uppercase tracking-widest">
-                      <span className="flex items-center gap-1.5">
-                        <Shield size={11} />
-                        {incident.project?.name || 'Unknown project'}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Clock size={11} />
-                        {new Date(incident.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
+              <motion.tr key={incident._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.02 }} onClick={() => navigate(`/incident/${incident._id}`)} className="group hover:bg-slate-800/30 transition-all cursor-pointer">
+                <td className="px-6 py-4">
+                  <span className={`px-2 py-0.5 rounded text-[9px] font-bold border ${conf.badge}`}>{sev}</span>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-xs font-semibold text-white mb-0.5">{incident.title}</div>
+                  <div className="text-[9px] text-slate-500 font-mono tracking-tighter">#{incident._id?.slice(-8)}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`w-1 h-1 rounded-full ${incident.status === 'open' ? 'bg-red-500' : incident.status === 'resolved' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                    <span className="text-[10px] font-semibold uppercase tracking-widest">{incident.status}</span>
                   </div>
-
-                  <button
-                    onClick={() => navigate(`/incidents/${incident._id}`)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] font-semibold uppercase tracking-widest transition-all shrink-0"
-                  >
-                    View <ArrowRight size={13} />
-                  </button>
-                </div>
-
-                {/* AI insights strip (shown when available) */}
-                {incident.aiSuggestions?.nextAction && (
-                  <div className="mt-4 pt-4 border-t border-slate-800">
-                    <div className="text-[9px] font-semibold text-indigo-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                      <Zap size={11} /> AI Next Action
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-[9px] font-bold border border-slate-700">
+                      {incident.assignedLead?.username?.[0].toUpperCase() || 'U'}
                     </div>
-                    <p className="text-xs text-indigo-100/80 font-medium leading-snug">
-                      {incident.aiSuggestions.nextAction}
-                    </p>
+                    <span className="text-[10px] font-medium text-slate-400">{incident.assignedLead?.username || 'Unassigned'}</span>
                   </div>
-                )}
-              </motion.div>
+                </td>
+                <td className="px-6 py-4 text-[10px] font-medium text-slate-500">{new Date(incident.createdAt).toLocaleDateString()}</td>
+              </motion.tr>
             );
           })}
-        </section>
+        </tbody>
+      </table>
+      {data.length === 0 && !incidentsLoading && (
+        <div className="py-20 text-center text-slate-500 font-medium italic text-xs">No incidents found.</div>
+      )}
+    </div>
+  );
 
-      {/* Report Incident Modal */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 12 }}
-              className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-bold tracking-tight">Report Incident</h3>
-                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mt-0.5">
-                    Raise a new issue for your team
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="w-8 h-8 rounded-full hover:bg-slate-800 flex items-center justify-center text-slate-500"
-                >
-                  <X size={16} />
-                </button>
+  const renderNotifications = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">Notifications</h2>
+        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{notifications.length} Total</span>
+      </div>
+      <div className="space-y-3">
+        {notifications.map((notif, i) => (
+          <motion.div key={notif._id || i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} className={`p-5 rounded-xl border ${notif.isRead ? 'bg-slate-900/40 border-slate-800/50 opacity-60' : 'bg-slate-900 border-slate-800 hover:border-slate-700'} transition-all flex items-start gap-4`}>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${notif.isRead ? 'bg-slate-800 text-slate-600' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
+              <Bell size={16} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-slate-300 leading-relaxed mb-2">{notif.message}</p>
+              <div className="flex items-center gap-3">
+                <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{new Date(notif.createdAt).toLocaleString()}</span>
+                {!notif.isRead && <span className="w-1 h-1 rounded-full bg-amber-500"></span>}
               </div>
+            </div>
+          </motion.div>
+        ))}
+        {notifications.length === 0 && (
+          <div className="py-20 text-center text-slate-500 font-medium italic text-xs">No notifications yet.</div>
+        )}
+      </div>
+    </div>
+  );
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">
-                    Title *
-                  </label>
-                  <input
-                    required
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Brief summary of the issue..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-500 outline-none transition-all placeholder:text-slate-700"
-                  />
+  const renderReportForm = () => (
+    <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20"><Send size={20} /></div>
+          <div>
+            <h3 className="text-lg font-semibold tracking-tight">Report Incident</h3>
+            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest mt-0.5 italic text-emerald-500/80">SRE team will be notified instantly and investigation will begin.</p>
+          </div>
+        </div>
+      </div>
+      <div className="space-y-5">
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest ml-0.5">Incident Title</label>
+          <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-amber-500 outline-none transition-all placeholder:text-slate-800" placeholder="e.g. Latency spike in payment-gateway" />
+          <p className="text-[9px] text-slate-600 font-medium ml-1 flex items-center gap-1"><Info size={10} /> Be specific. Example: Payment API returning 500 errors on checkout</p>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest ml-0.5">Severity</label>
+            <select value={formData.severity} onChange={e => setFormData({...formData, severity: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-amber-500 outline-none transition-all appearance-none">
+              <option value="P1">P1 - Critical</option>
+              <option value="P2">P2 - High</option>
+              <option value="P3">P3 - Low</option>
+            </select>
+            <p className="text-[8px] text-slate-600 font-bold uppercase tracking-[0.05em] ml-1 leading-relaxed">{severityConfig[formData.severity].desc}</p>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest ml-0.5">Select affected project</label>
+            <select required value={formData.projectId} onChange={e => setFormData({...formData, projectId: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-amber-500 outline-none transition-all appearance-none">
+              <option value="">Select affected project</option>
+              {projects.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest ml-0.5">Description</label>
+          <textarea required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-amber-500 outline-none transition-all h-32 placeholder:text-slate-800 resize-none" placeholder={"What happened?\nWhat is the impact?\nSteps to reproduce?"} />
+        </div>
+        <div className="space-y-3">
+          <button type="submit" disabled={isSubmitting} className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-amber-500/10 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            {isSubmitting ? <><RefreshCw size={16} className="animate-spin" /> Reporting...</> : 'Submit Incident Report'}
+          </button>
+          <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest text-center">Incident will be routed to the responsible team automatically</p>
+        </div>
+      </div>
+    </form>
+  );
+
+  return (
+    <div className="space-y-10">
+      {location.pathname === '/bugger' && renderDashboard()}
+      {location.pathname === '/bugger/report' && (
+        <div className="max-w-2xl mx-auto py-10">
+          {renderReportForm()}
+        </div>
+      )}
+      {location.pathname === '/bugger/incidents' && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 px-1">
+            <AlertCircle className="text-red-500" size={16} />
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">My Incident History</h2>
+          </div>
+          {renderIncidentsTable(myIncidents)}
+        </div>
+      )}
+      {location.pathname === '/bugger/notifications' && renderNotifications()}
+      
+      {/* SUCCESS MODAL */}
+      <AnimatePresence>
+        {successData && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeModal} className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden p-10 text-center flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-6 border border-emerald-500/20"><CheckCircle size={32} /></div>
+                <h3 className="text-xl font-bold text-white mb-2">Incident reported successfully</h3>
+                <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 mt-2 mb-8">
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mr-2">Tracking ID:</span>
+                  <span className="text-sm font-mono text-emerald-400">INC-{successData._id?.slice(-6).toUpperCase()}</span>
                 </div>
+                <button onClick={closeModal} className="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all">Return to Dashboard</button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-                <div>
-                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Steps to reproduce, impact, what you observed..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-500 outline-none transition-all placeholder:text-slate-700 resize-none"
-                  />
+      {/* QUICK REPORT MODAL (if triggered from elsewhere) */}
+      <AnimatePresence>
+        {isModalOpen && !successData && !location.pathname.includes('/report') && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeModal} className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="relative w-full max-w-lg">
+                <div className="absolute right-4 top-4 z-10">
+                  <button onClick={closeModal} className="p-2 text-slate-500 hover:text-white transition-colors"><X size={20} /></button>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">
-                      Severity *
-                    </label>
-                    <select
-                      value={formData.severity}
-                      onChange={(e) => setFormData({ ...formData, severity: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-500 outline-none transition-all"
-                    >
-                      <option value="low">P3 – Low</option>
-                      <option value="medium">P2 – Medium</option>
-                      <option value="high">P1 – Critical</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">
-                      Project *
-                    </label>
-                    <select
-                      required
-                      value={formData.projectId}
-                      onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-medium focus:border-indigo-500 outline-none transition-all"
-                    >
-                      <option value="">Select project...</option>
-                      {projects.map((p) => (
-                        <option key={p._id} value={p._id}>{p.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-indigo-600/10 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {submitting ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={14} />}
-                  {submitting ? 'Submitting...' : 'Submit Report'}
-                </button>
-              </form>
+                {renderReportForm()}
             </motion.div>
           </div>
         )}
       </AnimatePresence>
     </div>
   );
-}
+};
+
+export default BuggerDashboard;

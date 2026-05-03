@@ -22,19 +22,19 @@ const router = express.Router();
 // Create incident (bugger only)
 router.post("/", protect, allowRoles("bugger"), validateCreateIncident, createIncident);
 
-// Get all incidents
-router.get("/", protect, getIncidents);
+// Get all incidents (public for landing page status)
+router.get("/", getIncidents);
 
 // Get single incident
-router.get("/:id", protect, getIncidentById);
+router.get("/:id", getIncidentById);
 
-// Assign responders (teamLead only)
-router.patch("/:id/responders", protect, allowRoles("teamLead"), validateAssignResponders, assignResponders);
+// Assign responders (teamLead and admin)
+router.patch("/:id/responders", protect, allowRoles("teamLead", "admin"), validateAssignResponders, assignResponders);
 
 // Update status: open → inProgress → resolved
 router.patch("/:id/status", protect, validateUpdateStatus, updateStatus);
 
-// Manual postmortem write/edit (teamLead only — AI auto-generates, this allows refinement)
-router.patch("/:id/postmortem", protect, allowRoles("teamLead"), updatePostmortem);
+// Manual postmortem write/edit (teamLead + admin)
+router.patch("/:id/postmortem", protect, allowRoles("teamLead", "admin"), updatePostmortem);
 
 export default router;

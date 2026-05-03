@@ -94,6 +94,7 @@ export const getIncidents = async (req, res) => {
 export const getIncidentById = async (req, res) => {
   try {
     const incident = await Incident.findById(req.params.id)
+      .populate("project", "name")
       .populate("createdBy", "username email")
       .populate("assignedLead", "username email")
       .populate("responders", "username email")

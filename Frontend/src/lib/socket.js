@@ -1,30 +1,46 @@
 import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_BACKEND_API || "http://localhost:3000";
+const BASE = import.meta.env.VITE_BACKEND_API || "http://localhost:3000";
 
-// Singleton socket instance — created once, reused everywhere
-export const socket = io(SOCKET_URL, {
-  withCredentials: true,
-  autoConnect: false, // connect only after auth is confirmed
-});
+// Singleton socket instance
+let socket = null;
 
-/**
- * Join a personal notification room for the authenticated user.
- * Call this once after login / auth bootstrap.
- * @param {string} userId
- */
-export function joinUserRoom(userId) {
-  if (userId) socket.emit("join", userId);
+export function getSocket() {
+  if (!socket) {
+    socket = io(BASE, {
+      autoConnect: false,
+      withCredentials: true,
+    });
+  }
+  return socket;
 }
 
 /**
- * Join an incident-specific room to receive AI insight events.
- * @param {string} incidentId
+ * Connect and join the user's personal notification room.
+ * Call this once after login (from App.jsx or authSlice).
  */
-export function joinIncidentRoom(incidentId) {
-  if (incidentId) socket.emit("join", `incident:${incidentId}`);
+export function connectSocket(userId) {
+  const s = getSocket();
+  if (!s.connected) {
+    const token = localStorage.getItem("token");
+    s.auth = { token };
+    s.connect();
+  }
+  if (userId) {
+    s.emit("join", userId);
+  }
+  return s;
 }
 
-export function leaveIncidentRoom(incidentId) {
-  if (incidentId) socket.emit("leave", `incident:${incidentId}`);
+/**
+ * Disconnect and clean up the socket.
+ * Call this on logout.
+ */
+export function disconnectSocket() {
+  if (socket && socket.connected) {
+    socket.disconnect();
+  }
+  socket = null;
 }
+
+export default getSocket;
