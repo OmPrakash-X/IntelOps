@@ -87,19 +87,18 @@ export const addMembers = async (req, res) => {
   try {
     const { members } = req.body;
 
-    if (members.includes(group.createdBy.toString())) {
-        return res.status(400).json({
-            success: false,
-            message: "Creator cannot be a member"
-        });
-    
-    }
-    
     const group = await Group.findById(req.params.id);
     if (!group) {
       return res.status(404).json({
         success: false,
         message: "Group not found"
+      });
+    }
+
+    if (members.includes(group.createdBy.toString())) {
+      return res.status(400).json({
+        success: false,
+        message: "Creator cannot be a member"
       });
     }
 
