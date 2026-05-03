@@ -4,33 +4,38 @@ import { createNotification } from "../utils/notification.util.js";
 import User from "../models/user.model.js";
 import Project from "../models/project.model.js";
 import { runPostmortem } from "../ai/ai.service.js";
+import { getIO } from "../socket/index.js";
 
+// ─────────────────────────────────────────────
+// CREATE INCIDENT
+// ─────────────────────────────────────────────
 export const createIncident = async (req, res) => {
   try {
     const { title, description, severity, projectId } = req.body;
-    const project = await Project.findById(projectId);
+
+    // Populate group so we can access group.teamLead directly
+    const project = await Project.findById(projectId).populate("group");
 
     if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found"
-      });
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    if (!project.group) {
+      return res.status(400).json({ success: false, message: "Project has no group assigned" });
     }
 
     const incident = await Incident.create({
       title,
       description,
       severity,
-      project,
-      group: project.group,
+      project: project._id,
+      group: project.group._id,
       assignedLead: project.group.teamLead,
       createdBy: req.user._id,
       status: "open"
     });
 
     const admin = await User.findOne({ role: "admin" }).select("_id");
-    const adminIds = [admin._id];
-    
 
     await Timeline.create({
       incident: incident._id,
@@ -46,78 +51,67 @@ export const createIncident = async (req, res) => {
       createdBy: req.user._id
     });
 
-    await createNotification({
-      recipients: adminIds,
-      message: "New incident created",
-      incidentId: incident._id,
-      type: "incident"
-    });
-
-    await createNotification({
-      recipients: [project.group.teamLead],
-      message: "New incident assigned to you",
-      incidentId: incident._id,
-      type: "assignment"
-    });
-
-    res.status(201).json({
-      success: true,
-      data: incident
-    });
-
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
-};
-
-
-export const getIncidents = async (req, res) => {
-  try {
-    const incidents = await Incident.find()
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({
-      success: true,
-      data: incidents
-    });
-
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
-};
-
-
-export const getIncidentById = async (req, res) => {
-  try {
-    const incident = await Incident.findById(req.params.id);
-
-    if (!incident) {
-      return res.status(404).json({
-        success: false,
-        message: "Incident not found"
+    if (admin) {
+      await createNotification({
+        recipients: [admin._id],
+        message: "New incident created",
+        incidentId: incident._id,
+        type: "incident"
       });
     }
 
-    res.status(200).json({
-      success: true,
-      data: incident
-    });
+    if (project.group.teamLead) {
+      await createNotification({
+        recipients: [project.group.teamLead],
+        message: "New incident assigned to you",
+        incidentId: incident._id,
+        type: "assignment"
+      });
+    }
+
+    res.status(201).json({ success: true, data: incident });
 
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
+// ─────────────────────────────────────────────
+// GET ALL INCIDENTS
+// ─────────────────────────────────────────────
+export const getIncidents = async (req, res) => {
+  try {
+    const incidents = await Incident.find().sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: incidents });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
+// ─────────────────────────────────────────────
+// GET SINGLE INCIDENT
+// ─────────────────────────────────────────────
+export const getIncidentById = async (req, res) => {
+  try {
+    const incident = await Incident.findById(req.params.id)
+      .populate("createdBy", "username email")
+      .populate("assignedLead", "username email")
+      .populate("responders", "username email")
+      .populate("resolvedBy", "username email");
+
+    if (!incident) {
+      return res.status(404).json({ success: false, message: "Incident not found" });
+    }
+
+    res.status(200).json({ success: true, data: incident });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// ASSIGN RESPONDERS
+// ─────────────────────────────────────────────
 export const assignResponders = async (req, res) => {
   try {
     const { responders } = req.body;
@@ -125,19 +119,13 @@ export const assignResponders = async (req, res) => {
     const incident = await Incident.findById(req.params.id);
 
     if (!incident) {
-      return res.status(404).json({
-        success: false,
-        message: "Incident not found"
-      });
+      return res.status(404).json({ success: false, message: "Incident not found" });
     }
 
     const users = await User.find({ _id: { $in: responders } });
 
     if (users.length !== responders.length) {
-      return res.status(400).json({
-        success: false,
-        message: "Some users not found"
-      });
+      return res.status(400).json({ success: false, message: "Some users not found" });
     }
 
     const invalidUser = users.find(
@@ -147,7 +135,7 @@ export const assignResponders = async (req, res) => {
     if (invalidUser) {
       return res.status(400).json({
         success: false,
-        message: "All responders must belong to same group"
+        message: "All responders must belong to the same group"
       });
     }
 
@@ -157,6 +145,11 @@ export const assignResponders = async (req, res) => {
         ...responders
       ])
     ];
+
+    // Track only newly added responders before overwriting
+    const newResponders = responders.filter(
+      id => !incident.responders.map(r => r.toString()).includes(id)
+    );
 
     incident.responders = updatedResponders;
     await incident.save();
@@ -168,51 +161,65 @@ export const assignResponders = async (req, res) => {
       createdBy: req.user._id
     });
 
-
-    const newResponders = responders.filter(
-      id => !incident.responders.includes(id)
-    );
-
     if (newResponders.length > 0) {
       await createNotification({
         recipients: newResponders,
-        message: "You have been assigned as responder",
+        message: "You have been assigned as a responder",
         incidentId: incident._id,
         type: "assignment"
       });
     }
 
-    res.status(200).json({
-      success: true,
-      data: incident
-    });
+    res.status(200).json({ success: true, data: incident });
 
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-
+// ─────────────────────────────────────────────
+// UPDATE STATUS
+// Handles open → inProgress → resolved
+// Guards merged from the old resolveIncident function:
+//   - Only assignedLead can resolve
+//   - Responders must be assigned before resolving
+// ─────────────────────────────────────────────
 export const updateStatus = async (req, res) => {
   try {
     const { status } = req.body;
 
-    const updateData = { status };
+    const incident = await Incident.findById(req.params.id);
 
-    // When resolving, record who resolved it and when
-    if (status === "resolved") {
-      updateData.resolvedBy = req.user._id;
-      updateData.resolvedAt = new Date();
+    if (!incident) {
+      return res.status(404).json({ success: false, message: "Incident not found" });
     }
 
-    const incident = await Incident.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    );
+    if (incident.status === "resolved") {
+      return res.status(400).json({ success: false, message: "Incident is already resolved" });
+    }
+
+    // Extra guards when resolving
+    if (status === "resolved") {
+      if (incident.assignedLead.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: "Only the assigned Team Lead can resolve an incident"
+        });
+      }
+
+      if (!incident.responders || incident.responders.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Assign responders before resolving the incident"
+        });
+      }
+
+      incident.resolvedBy = req.user._id;
+      incident.resolvedAt = new Date();
+    }
+
+    incident.status = status;
+    await incident.save();
 
     await Timeline.create({
       incident: incident._id,
@@ -222,165 +229,75 @@ export const updateStatus = async (req, res) => {
     });
 
     const admin = await User.findOne({ role: "admin" }).select("_id");
-    const adminIds = [admin._id];
 
     const notifyUsers = [
       incident.assignedLead,
       ...incident.responders,
-      ...adminIds
+      ...(admin ? [admin._id] : [])
     ].filter(Boolean);
 
     const uniqueUsers = [...new Set(notifyUsers.map(id => id.toString()))];
 
     await createNotification({
       recipients: uniqueUsers,
-      message: `Status updated to ${status}`,
+      message: `Incident status updated to ${status}`,
       incidentId: incident._id,
       type: "status"
     });
 
+    res.status(200).json({ success: true, data: incident });
 
-    res.status(200).json({
-      success: true,
-      data: incident
-    });
-
-    // Fire-and-forget: Generate AI postmortem AFTER response is sent
-    // Only triggers when incident is fully resolved
+    // Fire-and-forget: generate AI postmortem after response is sent
     if (status === "resolved") {
-      runPostmortem(incident._id).catch((err) =>
+      runPostmortem(incident._id).catch(err =>
         console.error("[AI] Postmortem generation error:", err.message)
       );
     }
 
-
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-export const resolveIncident = async (req, res) => {
-  try {
-    const incidentId = req.params.id;
-
-    const incident = await Incident.findById(incidentId);
-
-    if (!incident) {
-      return res.status(404).json({
-        success: false,
-        message: "Incident not found"
-      });
-    }
-
-    if (incident.assignedLead.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "Only TeamLead can resolve incident"
-      });
-    }
-
-    if (incident.status === "resolved") {
-      return res.status(400).json({
-        success: false,
-        message: "Incident already resolved"
-      });
-    }
-
-    if (!incident.responders || incident.responders.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Assign responders before resolving"
-      });
-    }
-
-    incident.status = "resolved";
-    incident.resolvedBy = req.user._id;
-    incident.resolvedAt = new Date();
-
-    await incident.save();
-
-    await Timeline.create({
-      incident: incident._id,
-      message: "Incident resolved",
-      type: "resolution",
-      createdBy: req.user._id
-    });
-
-    const adminUsers = await User.find({ role: "admin" }).select("_id");
-
-    const recipients = [
-      ...incident.responders,
-      ...adminUsers.map(a => a._id)
-    ].map(id => id.toString());
-
-    const uniqueRecipients = [...new Set(recipients)];
-
-    await createNotification({
-      recipients: uniqueRecipients,
-      message: "Incident resolved",
-      incidentId: incident._id,
-      type: "incidentResolved"
-    });
-
-    const io = getIO();
-    uniqueRecipients.forEach(userId => {
-      io.to(userId).emit("incident_resolved", {
-        incidentId: incident._id
-      });
-    });
-
-    return res.status(200).json({
-      success: true,
-      data: incident
-    });
-
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
-};
-
+// ─────────────────────────────────────────────
+// UPDATE POSTMORTEM (Manual override)
+// Lets the Team Lead write or edit the postmortem manually.
+// AI auto-generates postmortem on resolve, but this allows refinement.
+// ─────────────────────────────────────────────
 export const updatePostmortem = async (req, res) => {
   try {
-    const incidentId = req.params.id;
     const { summary, rootCause, impact, resolution } = req.body;
 
-    const incident = await Incident.findById(incidentId);
+    const incident = await Incident.findById(req.params.id);
 
     if (!incident) {
-      return res.status(404).json({
-        success: false,
-        message: "Incident not found"
-      });
+      return res.status(404).json({ success: false, message: "Incident not found" });
     }
 
     if (incident.assignedLead.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
-        message: "Only TeamLead can update postmortem"
+        message: "Only the assigned Team Lead can update the postmortem"
       });
     }
 
     if (incident.status !== "resolved") {
       return res.status(400).json({
         success: false,
-        message: "Resolve incident before postmortem"
+        message: "Resolve the incident before updating the postmortem"
       });
     }
 
     if (!summary || !rootCause || !impact || !resolution) {
       return res.status(400).json({
         success: false,
-        message: "All postmortem fields are required"
+        message: "summary, rootCause, impact, and resolution are all required"
       });
     }
 
+    // Merge with existing AI-generated postmortem — don't overwrite AI extras
     incident.postmortem = {
+      ...incident.postmortem,
       summary,
       rootCause,
       impact,
@@ -391,8 +308,8 @@ export const updatePostmortem = async (req, res) => {
 
     await Timeline.create({
       incident: incident._id,
-      message: "Postmortem finalized",
-      type: "postmortem",
+      message: "Postmortem manually updated",
+      type: "action",
       createdBy: req.user._id
     });
 
@@ -407,27 +324,19 @@ export const updatePostmortem = async (req, res) => {
 
     await createNotification({
       recipients: uniqueRecipients,
-      message: "Postmortem updated",
+      message: "Postmortem has been updated",
       incidentId: incident._id,
-      type: "postmortemUpdated"
+      type: "status"
     });
 
     const io = getIO();
     uniqueRecipients.forEach(userId => {
-      io.to(userId).emit("postmortem_updated", {
-        incidentId: incident._id
-      });
+      io.to(userId).emit("postmortem_updated", { incidentId: incident._id });
     });
 
-    return res.status(200).json({
-      success: true,
-      data: incident.postmortem
-    });
+    return res.status(200).json({ success: true, data: incident.postmortem });
 
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };

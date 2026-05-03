@@ -5,7 +5,6 @@ import {
   getIncidentById,
   assignResponders,
   updateStatus,
-  resolveIncident,
   updatePostmortem
 } from "../controllers/incident.controller.js";
 
@@ -14,61 +13,28 @@ import { allowRoles } from "../middlewares/role.middleware.js";
 
 import {
   validateCreateIncident,
-  validateAssignLead,
   validateAssignResponders,
   validateUpdateStatus
 } from "../validators/incident.validator.js";
 
 const router = express.Router();
 
-router.post(
-  "/",
-  protect,
-  allowRoles("bugger"),
-  validateCreateIncident,
-  createIncident
-);
+// Create incident (bugger only)
+router.post("/", protect, allowRoles("bugger"), validateCreateIncident, createIncident);
 
-router.get(
-  "/",
-  protect,
-  getIncidents
-);
+// Get all incidents
+router.get("/", protect, getIncidents);
 
+// Get single incident
+router.get("/:id", protect, getIncidentById);
 
-router.get(
-  "/:id",
-  protect,
-  getIncidentById
-);
+// Assign responders (teamLead only)
+router.patch("/:id/responders", protect, allowRoles("teamLead"), validateAssignResponders, assignResponders);
 
+// Update status: open → inProgress → resolved
+router.patch("/:id/status", protect, validateUpdateStatus, updateStatus);
 
-router.patch(
-  "/:id/responders",
-  protect,
-  allowRoles("teamLead"),
-  validateAssignResponders,
-  assignResponders
-);
-
-
-router.patch(
-  "/:id/status",
-  protect,
-  validateUpdateStatus,
-  updateStatus
-);
-
-router.patch(
-  "/:id/resolve",
-  protect,
-  resolveIncident
-);
-
-router.patch(
-  "/:id/postmortem",
-  protect,
-  updatePostmortem
-);
+// Manual postmortem write/edit (teamLead only — AI auto-generates, this allows refinement)
+router.patch("/:id/postmortem", protect, allowRoles("teamLead"), updatePostmortem);
 
 export default router;
