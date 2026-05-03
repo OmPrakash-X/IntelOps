@@ -22,7 +22,7 @@ const AutomationManagement = () => {
 
   useEffect(() => { dispatch(fetchIncidents()); }, [dispatch]);
 
-  const aiIncidents    = incidents.filter(i => i.aiSuggestions?.nextAction);
+  const aiIncidents    = incidents.filter(i => i.aiSuggestions?.nextAction || i.postmortem?.summary);
   const withPostmortem = incidents.filter(i => i.postmortem?.summary);
   const pending        = incidents.filter(i => !i.aiSuggestions?.nextAction && i.status !== 'resolved').length;
 
@@ -101,19 +101,29 @@ const AutomationManagement = () => {
                         {inc.status === 'resolved' && <CheckCircle size={12} color="#10b981" />}
                       </div>
                       <h4 className="font-['Marcellus'] text-sm text-[#F2F0E4] group-hover:text-[#D4AF37] transition-colors truncate mb-3">{inc.title}</h4>
-                      <div className="p-3 bg-[#D4AF37]/[0.05] border border-[#D4AF37]/15 mb-2">
-                        <p className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-[0.2em] mb-1">Next Action</p>
-                        <p className="text-[11px] text-[#ccc] leading-snug">{inc.aiSuggestions.nextAction}</p>
-                      </div>
-                      {inc.aiSuggestions.timelineSummary && (
-                        <div className="p-3 bg-[#D4AF37]/[0.02] border border-[#D4AF37]/10">
+                      {inc.aiSuggestions?.nextAction && (
+                        <div className="p-3 bg-[#D4AF37]/[0.05] border border-[#D4AF37]/15 mb-2">
+                          <p className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-[0.2em] mb-1">Next Action</p>
+                          <p className="text-[11px] text-[#ccc] leading-snug">{inc.aiSuggestions.nextAction}</p>
+                        </div>
+                      )}
+                      {inc.postmortem?.summary && (
+                        <div className="p-3 bg-[#10b981]/[0.05] border border-[#10b981]/15 mb-2">
+                          <p className="text-[9px] font-bold text-[#10b981] uppercase tracking-[0.2em] mb-1">Postmortem Generated</p>
+                          <p className="text-[11px] text-[#ccc] leading-snug line-clamp-2">{inc.postmortem.summary}</p>
+                        </div>
+                      )}
+                      {inc.aiSuggestions?.timelineSummary && (
+                        <div className="p-3 bg-[#D4AF37]/[0.02] border border-[#D4AF37]/10 mb-2">
                           <p className="text-[9px] font-bold text-[#888] uppercase tracking-[0.2em] mb-1">Timeline Summary</p>
                           <p className="text-[11px] text-[#aaa] leading-snug whitespace-pre-line">{inc.aiSuggestions.timelineSummary}</p>
                         </div>
                       )}
                       <div className="flex items-center gap-2 mt-3">
                         <Clock size={10} className="text-[#555]" />
-                        <span className="text-[9px] font-bold text-[#555]">{new Date(inc.aiSuggestions.generatedAt || inc.updatedAt).toLocaleString()}</span>
+                        <span className="text-[9px] font-bold text-[#555]">
+                          {new Date(inc.postmortem?.generatedAt || inc.aiSuggestions?.generatedAt || inc.updatedAt).toLocaleString()}
+                        </span>
                       </div>
                     </div>
                     <Link to={`/incident/${inc._id}`} className="flex items-center justify-center w-8 h-8 bg-[#D4AF37]/5 border border-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#0A0A0A] transition-all shrink-0 mt-1">

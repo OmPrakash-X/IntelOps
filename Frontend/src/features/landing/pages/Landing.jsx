@@ -199,10 +199,25 @@ export default function Landing() {
         .deco-card { background: ${CHARCOAL}; border: 1px solid rgba(212,175,55,0.2); position: relative; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         .pulse { animation: pulse 1.5s infinite; }
-        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes spin-reverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
         .spin-slow { animation: spin-slow 20s linear infinite; }
         .spin-reverse { animation: spin-reverse 14s linear infinite; }
+
+        @media (max-width: 768px) {
+          .nav-desktop { display: none !important; }
+          .nav-container { padding: 0 16px !important; }
+          .nav-logo-text { font-size: 16px !important; letter-spacing: 0.1em !important; }
+          .nav-btn { padding: 10px 16px !important; font-size: 9px !important; letter-spacing: 0.15em !important; }
+          .hero-btn-group { flex-direction: column; width: 100%; padding: 0 16px; }
+          .hero-btn-group button { width: 100%; }
+          .stat-group { flex-direction: column; gap: 32px; align-items: center; }
+          .stat-divider { display: none !important; }
+          .inc-card { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; padding: 20px !important; }
+          .inc-content { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+          .inc-meta { flex-wrap: wrap; gap: 10px !important; }
+          .pricing-grid { grid-template-columns: 1fr !important; }
+          .footer-wrap { justify-content: center !important; text-align: center; flex-direction: column; }
+        }
       `}</style>
 
       <div style={{
@@ -222,7 +237,7 @@ export default function Landing() {
           transition={{ duration: 0.6, ease: 'easeOut' }}
           style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(10,10,10,0.92)', backdropFilter: 'blur(12px)', borderBottom: `1px solid rgba(212,175,55,0.2)` }}
         >
-          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="nav-container" style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px', height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <motion.div
               style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -237,10 +252,11 @@ export default function Landing() {
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
               </motion.div>
-              <span style={{ fontFamily: "'Marcellus', serif", fontSize: 20, color: CREAM, letterSpacing: '0.2em', textTransform: 'uppercase' }}>IntelOps</span>
+              <span className="nav-logo-text" style={{ fontFamily: "'Marcellus', serif", fontSize: 20, color: CREAM, letterSpacing: '0.2em', textTransform: 'uppercase' }}>IntelOps</span>
             </motion.div>
 
             <motion.div
+              className="nav-desktop"
               style={{ display: 'flex', gap: 40 }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -252,6 +268,7 @@ export default function Landing() {
             </motion.div>
 
             <motion.button
+              className="nav-btn"
               style={btnBase}
               onClick={() => navigate('/login')}
               whileHover={{ background: GOLD, color: OBSIDIAN, boxShadow: '0 0 28px rgba(212,175,55,0.35)' }}
@@ -334,6 +351,7 @@ export default function Landing() {
             </motion.p>
 
             <motion.div
+              className="hero-btn-group"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 1 }}
@@ -358,6 +376,7 @@ export default function Landing() {
             </motion.div>
 
             <motion.div
+              className="stat-group"
               variants={stagger(0.15)}
               initial="hidden"
               animate="show"
@@ -370,7 +389,7 @@ export default function Landing() {
                 { value: '99.98%', label: 'Uptime' },
               ].map(({ value, label }, i) => (
                 <React.Fragment key={label}>
-                  {i > 0 && <motion.div variants={fadeIn} style={{ width: 1, background: `rgba(212,175,55,0.2)`, margin: '0 40px' }} />}
+                  {i > 0 && <motion.div className="stat-divider" variants={fadeIn} style={{ width: 1, background: `rgba(212,175,55,0.2)`, margin: '0 40px' }} />}
                   <motion.div variants={fadeUp} style={{ textAlign: 'center' }}>
                     <div style={{ fontFamily: "'Marcellus', serif", fontSize: 28, color: GOLD, marginBottom: 4 }}>{value}</div>
                     <div style={{ fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase', color: '#666' }}>{label}</div>
@@ -458,18 +477,19 @@ export default function Landing() {
                     <motion.div
                       key={inc._id}
                       variants={slideLeft}
+                      className="inc-card"
                       onClick={() => navigate(`/incident/${inc._id}`)}
                       style={{ background: CHARCOAL, border: `1px solid rgba(212,175,55,0.15)`, padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, cursor: 'pointer' }}
                       whileHover={{ borderColor: GOLD, boxShadow: '0 0 20px rgba(212,175,55,0.1)', x: 4 }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                      <div className="inc-content" style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                           <div className={sev === 'P1' ? 'pulse' : ''} style={{ width: 10, height: 10, borderRadius: '50%', background: sevColor, boxShadow: sev === 'P1' ? `0 0 10px ${sevColor}` : undefined }} />
                           <span style={{ fontSize: 9, color: '#555', letterSpacing: '0.1em' }}>{sev}</span>
                         </div>
                         <div>
                           <h4 style={{ fontFamily: "'Marcellus', serif", fontSize: 16, color: CREAM, letterSpacing: '0.05em', marginBottom: 6 }}>{inc.title}</h4>
-                          <div style={{ display: 'flex', gap: 20, fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#666' }}>
+                          <div className="inc-meta" style={{ display: 'flex', gap: 20, fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#666' }}>
                             <span>{inc.status === 'inProgress' ? 'In Progress' : inc.status}</span>
                             <span>{inc.createdBy?.username || 'System'}</span>
                             <span>{new Date(inc.createdAt).toLocaleTimeString()}</span>
@@ -519,6 +539,7 @@ export default function Landing() {
             </RevealOnScroll>
 
             <motion.div
+              className="pricing-grid"
               variants={stagger(0.12)}
               initial="hidden"
               whileInView="show"
@@ -591,7 +612,7 @@ export default function Landing() {
               Cut Your MTTR<br /><span style={{ color: GOLD }}>By 70%</span>
             </h2>
             <p style={{ color: '#888', fontSize: 14, marginBottom: 48, letterSpacing: '0.05em' }}>Join engineering teams who resolved over 187,000 incidents with IntelOps.</p>
-            <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div className="hero-btn-group" style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
               <motion.button
                 style={btnSolid}
                 onClick={() => navigate('/login')}
@@ -611,8 +632,8 @@ export default function Landing() {
           </RevealOnScroll>
         </section>
 
-        {/* ── FOOTER ── */}
         <motion.footer
+          className="footer-wrap"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}

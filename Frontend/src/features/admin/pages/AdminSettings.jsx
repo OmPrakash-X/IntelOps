@@ -41,20 +41,20 @@ const AdminSettings = () => {
       </div>
 
       {/* Profile Card */}
-      <div className="relative p-8 bg-[#141414] border border-[#D4AF37]/25 flex items-center gap-6">
+      <div className="relative p-6 md:p-8 bg-[#141414] border border-[#D4AF37]/25 flex flex-col md:flex-row items-center text-center md:text-left gap-6">
         <Corners opacity="opacity-100" />
         <div className="flex items-center justify-center w-20 h-20 border-2 border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37] shrink-0">
           <span className="font-['Marcellus'] text-4xl">{(user?.username || 'A').charAt(0).toUpperCase()}</span>
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col items-center md:items-start">
           <h3 className="font-['Marcellus'] text-2xl text-[#F2F0E4] mb-1">{user?.username || 'Administrator'}</h3>
-          <p className="text-[#888] text-[12px] mb-2">{user?.email || 'admin@intelops.io'}</p>
-          <span className="px-2 py-1 bg-[#D4AF37]/10 text-[#D4AF37] text-[8px] font-bold uppercase tracking-[0.2em] border border-[#D4AF37]/30">
+          <p className="text-[#888] text-[12px] mb-3 md:mb-2 break-all">{user?.email || 'admin@intelops.io'}</p>
+          <span className="px-2 py-1 bg-[#D4AF37]/10 text-[#D4AF37] text-[8px] font-bold uppercase tracking-[0.2em] border border-[#D4AF37]/30 w-fit">
             {user?.role || 'System Admin'}
           </span>
         </div>
         <button onClick={handleLogout}
-          className="px-5 py-3 bg-[#ef4444]/10 text-[#ef4444] border border-[#ef4444]/30 text-[9px] font-bold uppercase tracking-[0.2em] hover:bg-[#ef4444] hover:text-[#0A0A0A] transition-all flex items-center gap-2 cursor-pointer shrink-0">
+          className="mt-4 md:mt-0 w-full md:w-auto px-5 py-3 bg-[#ef4444]/10 text-[#ef4444] border border-[#ef4444]/30 text-[9px] font-bold uppercase tracking-[0.2em] hover:bg-[#ef4444] hover:text-[#0A0A0A] transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0">
           <LogOut size={14} /> Logout
         </button>
       </div>
