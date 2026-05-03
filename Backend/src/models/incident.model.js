@@ -102,6 +102,11 @@ const incidentSchema = new mongoose.Schema({
     nextAction: String,
     // Legacy field kept for backward compatibility
     timelineSummary: String,
+    // Who manually triggered the AI (if manually run)
+    generatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    },
     // Timestamp of the last successful AI analysis run
     generatedAt: Date
   }

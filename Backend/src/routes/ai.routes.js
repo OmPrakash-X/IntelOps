@@ -11,38 +11,20 @@ import { allowRoles } from "../middlewares/role.middleware.js";
 const router = express.Router();
 
 /**
- * AI Routes — all mounted under /api/incidents/:id/ai
+ * AI Routes — mounted under /api/incidents/:id/ai
  * All routes require authentication.
  */
 
-// Root Cause Detection + Next Action Suggestions
-router.get(
-  "/:id/ai/suggestions",
-  protect,
-  getAISuggestions
-);
+// Root Cause Detection + Next Action Suggestions (any authenticated user)
+router.get("/:id/ai/suggestions", protect, getAISuggestions);
 
 // Manually trigger AI analysis (teamLead + admin only)
-router.post(
-  "/:id/ai/analyze",
-  protect,
-  allowRoles("admin", "teamLead"),
-  triggerAnalysis
-);
+router.post("/:id/ai/analyze", protect, allowRoles("admin", "teamLead"), triggerAnalysis);
 
-// Get stored postmortem for a resolved incident
-router.get(
-  "/:id/ai/postmortem",
-  protect,
-  getPostmortem
-);
+// Get stored postmortem for a resolved incident (any authenticated user)
+router.get("/:id/ai/postmortem", protect, getPostmortem);
 
-// Manually trigger postmortem generation (admin only)
-router.post(
-  "/:id/ai/postmortem",
-  protect,
-  allowRoles("admin", "teamLead"),
-  triggerPostmortem
-);
+// Manually trigger postmortem generation (teamLead + admin only)
+router.post("/:id/ai/postmortem", protect, allowRoles("admin", "teamLead"), triggerPostmortem);
 
 export default router;

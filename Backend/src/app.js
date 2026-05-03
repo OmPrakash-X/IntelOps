@@ -38,5 +38,6 @@ app.use("/api/incidents", aiRoutes);  // AI routes: /api/incidents/:id/ai/*
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/ai", aiRoutes);
 
 export default app;

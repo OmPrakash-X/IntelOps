@@ -42,7 +42,7 @@ export const getAISuggestions = async (req, res) => {
 
 /**
  * POST /api/incidents/:id/ai/analyze
- * Manually triggers AI analysis (bypasses cooldown for admin use).
+ * Manually triggers AI analysis (teamLead/admin only).
  * Useful during the demo to force a fresh analysis.
  */
 export const triggerAnalysis = async (req, res) => {
@@ -63,10 +63,9 @@ export const triggerAnalysis = async (req, res) => {
     // Respond immediately — AI runs in background
     res.status(202).json({
       success: true,
-      message: "AI analysis triggered. Results will arrive via Socket.io event: ai:rootCause and ai:nextAction",
+      message: "AI analysis triggered. Results will arrive via Socket.io: ai:rootCause and ai:nextAction",
     });
 
-    // Run without cooldown check (manual trigger by team lead/admin)
     runIncidentAnalysis(incident._id).catch((err) =>
       console.error("[AI] Manual trigger error:", err.message)
     );
@@ -120,7 +119,6 @@ export const getPostmortem = async (req, res) => {
 /**
  * POST /api/incidents/:id/ai/postmortem
  * Manually triggers postmortem generation for a resolved incident.
- * Useful if the auto-generation failed or needs to be refreshed.
  */
 export const triggerPostmortem = async (req, res) => {
   try {
@@ -137,10 +135,9 @@ export const triggerPostmortem = async (req, res) => {
       });
     }
 
-    // Respond immediately
     res.status(202).json({
       success: true,
-      message: "Postmortem generation triggered. Result will arrive via Socket.io event: ai:postmortem",
+      message: "Postmortem generation triggered. Result will arrive via Socket.io: ai:postmortem",
     });
 
     runPostmortem(incident._id).catch((err) =>

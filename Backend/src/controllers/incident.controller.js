@@ -261,3 +261,173 @@ export const updateStatus = async (req, res) => {
     });
   }
 };
+
+export const resolveIncident = async (req, res) => {
+  try {
+    const incidentId = req.params.id;
+
+    const incident = await Incident.findById(incidentId);
+
+    if (!incident) {
+      return res.status(404).json({
+        success: false,
+        message: "Incident not found"
+      });
+    }
+
+    if (incident.assignedLead.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Only TeamLead can resolve incident"
+      });
+    }
+
+    if (incident.status === "resolved") {
+      return res.status(400).json({
+        success: false,
+        message: "Incident already resolved"
+      });
+    }
+
+    if (!incident.responders || incident.responders.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Assign responders before resolving"
+      });
+    }
+
+    incident.status = "resolved";
+    incident.resolvedBy = req.user._id;
+    incident.resolvedAt = new Date();
+
+    await incident.save();
+
+    await Timeline.create({
+      incident: incident._id,
+      message: "Incident resolved",
+      type: "resolution",
+      createdBy: req.user._id
+    });
+
+    const adminUsers = await User.find({ role: "admin" }).select("_id");
+
+    const recipients = [
+      ...incident.responders,
+      ...adminUsers.map(a => a._id)
+    ].map(id => id.toString());
+
+    const uniqueRecipients = [...new Set(recipients)];
+
+    await createNotification({
+      recipients: uniqueRecipients,
+      message: "Incident resolved",
+      incidentId: incident._id,
+      type: "incidentResolved"
+    });
+
+    const io = getIO();
+    uniqueRecipients.forEach(userId => {
+      io.to(userId).emit("incident_resolved", {
+        incidentId: incident._id
+      });
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: incident
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
+
+export const updatePostmortem = async (req, res) => {
+  try {
+    const incidentId = req.params.id;
+    const { summary, rootCause, impact, resolution } = req.body;
+
+    const incident = await Incident.findById(incidentId);
+
+    if (!incident) {
+      return res.status(404).json({
+        success: false,
+        message: "Incident not found"
+      });
+    }
+
+    if (incident.assignedLead.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Only TeamLead can update postmortem"
+      });
+    }
+
+    if (incident.status !== "resolved") {
+      return res.status(400).json({
+        success: false,
+        message: "Resolve incident before postmortem"
+      });
+    }
+
+    if (!summary || !rootCause || !impact || !resolution) {
+      return res.status(400).json({
+        success: false,
+        message: "All postmortem fields are required"
+      });
+    }
+
+    incident.postmortem = {
+      summary,
+      rootCause,
+      impact,
+      resolution
+    };
+
+    await incident.save();
+
+    await Timeline.create({
+      incident: incident._id,
+      message: "Postmortem finalized",
+      type: "postmortem",
+      createdBy: req.user._id
+    });
+
+    const adminUsers = await User.find({ role: "admin" }).select("_id");
+
+    const recipients = [
+      ...incident.responders,
+      ...adminUsers.map(a => a._id)
+    ].map(id => id.toString());
+
+    const uniqueRecipients = [...new Set(recipients)];
+
+    await createNotification({
+      recipients: uniqueRecipients,
+      message: "Postmortem updated",
+      incidentId: incident._id,
+      type: "postmortemUpdated"
+    });
+
+    const io = getIO();
+    uniqueRecipients.forEach(userId => {
+      io.to(userId).emit("postmortem_updated", {
+        incidentId: incident._id
+      });
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: incident.postmortem
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
