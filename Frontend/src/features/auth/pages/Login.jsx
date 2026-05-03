@@ -1,275 +1,230 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import { login, fetchMyProfile } from '../authSlice';
+import { login } from '../authSlice';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Activity, Zap, Check, Lock, ArrowRight, MessageSquare, AlertCircle, Clock, ShieldAlert, Sparkles } from 'lucide-react';
+import { Shield, Lock, Eye, EyeOff, AlertTriangle, Activity, Zap, CheckCircle } from 'lucide-react';
 
-const ActivityItem = ({ title, time, delay }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.5, ease: "easeOut" }}
-    className="flex items-start gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md hover:bg-white/10 transition-all cursor-default"
-  >
-    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 shrink-0 border border-indigo-500/20">
-      <Activity size={18} />
-    </div>
-    <div className="flex flex-col gap-1">
-      <span className="text-[14px] font-bold text-slate-100 tracking-tight">{title}</span>
-      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-        <Clock size={12} />
-        <span>{time}</span>
-      </div>
-    </div>
-  </motion.div>
-);
+export default function Login() {
+  const navigate  = useNavigate();
+  const dispatch  = useDispatch();
+  const { loading } = useSelector(s => s.auth);
 
-const Login = () => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { loading: isLoading } = useSelector((state) => state.auth);
+  const [form,    setForm]    = useState({ email: '', password: '' });
+  const [show,    setShow]    = useState(false);
+  const [error,   setError]   = useState('');
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
-  const [error, setError] = useState(false);
-
-  const handleSubmit = async (e) => { 
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(false);
-
+    setError('');
     const res = await dispatch(login(form));
-    if (res.error) {
-      setError(true);
-      return;
-    }
-    if (res.meta.requestStatus === "fulfilled") {
-      const { user } = res.payload;
-      const role = user.role.toLowerCase();
-
-      if (role === "admin") navigate("/admin");
-      else if (role === "teamlead") navigate("/team-lead");
-      else if (role === "bugger") navigate("/bugger");
-      else if (role === "teammember") navigate("/member");
-      else navigate("/unauthorized");
+    if (res.error) { setError('Invalid credentials. Please try again.'); return; }
+    if (res.meta.requestStatus === 'fulfilled') {
+      const role = res.payload.user.role.toLowerCase();
+      if (role === 'admin')      navigate('/admin');
+      else if (role === 'teamlead')   navigate('/team-lead');
+      else if (role === 'bugger')     navigate('/bugger');
+      else if (role === 'teammember') navigate('/member');
+      else navigate('/unauthorized');
     }
   };
 
   return (
-    <div className="h-screen flex bg-white font-['Inter'] selection:bg-indigo-100 overflow-hidden">
-      
-      {/* LEFT SIDE: Brand & System Context (Dark Navy/Purple Gradient) */}
-      <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] relative flex-col justify-between p-12 overflow-hidden bg-[#0A0C14]">
-        {/* Deep Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0A0C14] via-[#101428] to-[#0A0C14] z-0" />
-        
-        {/* Subtle Mesh & Grid */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
-          <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(white 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/10 blur-[150px] rounded-full -translate-y-1/2 translate-x-1/2" />
-        </div>
+    <div className="min-h-screen flex" style={{ background:'#0A0A0A', fontFamily:"'Josefin Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Josefin+Sans:wght@300;400;600;700&display=swap');
+        .deco-input {
+          width:100%; background:transparent; border:none; border-bottom:2px solid rgba(212,175,55,0.4);
+          padding:12px 0; font-family:'Josefin Sans',sans-serif; font-size:13px;
+          color:#F2F0E4; letter-spacing:0.05em; outline:none; transition:border-color 0.3s;
+        }
+        .deco-input::placeholder { color:#444; }
+        .deco-input:focus { border-bottom-color:#D4AF37; }
+        .deco-btn-gold {
+          width:100%; padding:14px; background:#D4AF37; color:#0A0A0A;
+          font-family:'Josefin Sans',sans-serif; font-size:11px; font-weight:700;
+          letter-spacing:0.25em; text-transform:uppercase; border:none; cursor:pointer;
+          transition:all 0.3s; position:relative;
+        }
+        .deco-btn-gold:hover { background:#F2E8C4; box-shadow:0 0 28px rgba(212,175,55,0.4); }
+        .deco-btn-gold:disabled { opacity:0.5; cursor:not-allowed; }
+        @keyframes deco-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.3);} 50%{box-shadow:0 0 0 6px rgba(239,68,68,0);} }
+      `}</style>
 
-        {/* Branding */}
-        <div className="relative z-10">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-4 mb-3"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-2xl shadow-indigo-600/40 border border-white/10">
-              <Shield className="text-white" size={28} />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-['Plus_Jakarta_Sans'] font-black text-3xl text-white tracking-tight leading-none uppercase">IntelOps</span>
-              <span className="text-[12px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1.5">Incident response, in sync</span>
-            </div>
-          </motion.div>
-        </div>
+      {/* ── LEFT PANEL (Art Deco brand) ── */}
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-16 relative overflow-hidden"
+        style={{ borderRight:'1px solid rgba(212,175,55,0.15)', background:'#0e0e0e' }}>
 
-        {/* Operational Intelligence Cards */}
-        <div className="relative z-10 space-y-8 max-w-sm">
-          {/* Status Card */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-2xl shadow-2xl"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="text-white font-black text-md tracking-tight uppercase">Operational</span>
-              </div>
-              <ShieldAlert size={16} className="text-emerald-500" />
-            </div>
-            
-            <div className="space-y-4">
-              <p className="text-slate-300 font-medium text-[13px]">Core systems are performing within expected latency parameters.</p>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5, 6].map(i => (
-                  <div key={i} className="h-1.5 flex-1 bg-white/10 rounded-full overflow-hidden">
-                    <motion.div 
-                      animate={{ opacity: [0.3, 1, 0.3] }}
-                      transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.15 }}
-                      className="h-full w-full bg-emerald-500"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
+        {/* Crosshatch texture overlay */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden style={{
+          backgroundImage:`repeating-linear-gradient(45deg,rgba(212,175,55,0.03) 0,rgba(212,175,55,0.03) 1px,transparent 0,transparent 50%),repeating-linear-gradient(-45deg,rgba(212,175,55,0.03) 0,rgba(212,175,55,0.03) 1px,transparent 0,transparent 50%)`,
+          backgroundSize:'24px 24px'
+        }} />
 
-          {/* Activity Feed */}
-          <div className="space-y-4">
-            <h4 className="text-slate-500 font-black text-[10px] uppercase tracking-[0.2em] ml-1">Live Activity Feed</h4>
-            <div className="space-y-3">
-              <ActivityItem title="API latency spike detected" time="2 min ago" delay={0.4} />
-              <ActivityItem title="Database connection stabilized" time="5 min ago" delay={0.5} />
-              <ActivityItem title="Webhook delay resolved" time="12 min ago" delay={0.6} />
-            </div>
+        {/* Sunburst radial */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden
+          style={{ background:'radial-gradient(ellipse 70% 60% at 30% 40%,rgba(212,175,55,0.05) 0%,transparent 70%)' }} />
+
+        {/* Logo */}
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="flex items-center justify-center shrink-0"
+            style={{ width:40, height:40, border:'2px solid #D4AF37', transform:'rotate(45deg)', boxShadow:'0 0 16px rgba(212,175,55,0.25)' }}>
+            <Shield size={16} color="#D4AF37" style={{ transform:'rotate(-45deg)' }} />
+          </div>
+          <div>
+            <h1 style={{ fontFamily:"'Marcellus',serif", fontSize:20, color:'#D4AF37', letterSpacing:'0.2em', textTransform:'uppercase' }}>IntelOps</h1>
+            <p style={{ fontSize:8, color:'#555', letterSpacing:'0.28em', textTransform:'uppercase' }}>Command Centre</p>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="relative z-10 flex items-center gap-4">
-          <div className="flex -space-x-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="w-8 h-8 rounded-full border-2 border-[#0A0C14] bg-slate-800 flex items-center justify-center text-[10px] text-white font-black">
-                {String.fromCharCode(64 + i)}
-              </div>
-            ))}
+        {/* Center content */}
+        <motion.div initial={{ opacity:0, y:30 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.8, delay:0.2 }} className="relative z-10">
+          {/* Section label */}
+          <div className="flex items-center gap-4 mb-10">
+            <span className="h-px flex-1" style={{ background:'rgba(212,175,55,0.3)' }} />
+            <span style={{ fontSize:8, color:'#D4AF37', letterSpacing:'0.3em', textTransform:'uppercase' }}>System Status</span>
+            <span className="h-px flex-1" style={{ background:'rgba(212,175,55,0.3)' }} />
           </div>
-          <span className="text-[13px] font-bold text-slate-500 tracking-wide">3 engineers on-call</span>
+
+          <h2 style={{ fontFamily:"'Marcellus',serif", fontSize:'clamp(2rem,4vw,3rem)', color:'#F2F0E4', textTransform:'uppercase', letterSpacing:'0.1em', lineHeight:1.2, marginBottom:16 }}>
+            Incident<br /><span style={{ color:'#D4AF37' }}>Intelligence</span><br />Platform
+          </h2>
+          <p style={{ color:'#666', fontSize:13, lineHeight:1.8, letterSpacing:'0.04em', maxWidth:380, marginBottom:48 }}>
+            Autonomous detection, AI-powered root cause analysis, and real-time incident orchestration for elite SRE teams.
+          </p>
+
+          {/* Feature list */}
+          {[
+            { icon:Activity, text:'Real-time incident monitoring' },
+            { icon:Zap,      text:'AI-powered root cause analysis' },
+            { icon:CheckCircle, text:'Automated postmortem generation' },
+          ].map(({ icon:Icon, text }) => (
+            <div key={text} className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center shrink-0"
+                style={{ width:28, height:28, border:'1px solid rgba(212,175,55,0.3)', transform:'rotate(45deg)' }}>
+                <Icon size={11} color="#D4AF37" style={{ transform:'rotate(-45deg)' }} />
+              </div>
+              <span style={{ fontSize:11, color:'#888', letterSpacing:'0.08em' }}>{text}</span>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* Bottom stats */}
+        <div className="flex items-center gap-10 relative z-10" style={{ borderTop:'1px solid rgba(212,175,55,0.1)', paddingTop:24 }}>
+          {[['187K+','Resolved'],['94%','MTTR Cut'],['99.98%','Uptime']].map(([v,l]) => (
+            <div key={l}>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:20, color:'#D4AF37' }}>{v}</div>
+              <div style={{ fontSize:8, color:'#555', letterSpacing:'0.22em', textTransform:'uppercase' }}>{l}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* RIGHT SIDE: Login Form (Clean White) */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-[#F8FAFC] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.4] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-        
-        <motion.div
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full max-w-[440px] relative z-10"
-        >
-          {/* Internal Use Badge */}
-          <div className="flex justify-center mb-6">
-            <div className="px-4 py-1.5 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 shadow-xl">
-              <Lock size={12} className="text-indigo-400" />
-              Internal Use Only
+      {/* ── RIGHT PANEL (Login form) ── */}
+      <div className="flex-1 flex flex-col items-center justify-center px-8 py-16 relative">
+        {/* Subtle glow */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden
+          style={{ background:'radial-gradient(ellipse 60% 50% at 50% 50%,rgba(212,175,55,0.04) 0%,transparent 65%)' }} />
+
+        <motion.div initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.7 }}
+          className="w-full max-w-sm relative z-10">
+
+          {/* Mobile logo */}
+          <div className="flex items-center gap-3 mb-12 lg:hidden">
+            <div style={{ width:32, height:32, border:'2px solid #D4AF37', transform:'rotate(45deg)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <Shield size={12} color="#D4AF37" style={{ transform:'rotate(-45deg)' }} />
             </div>
+            <span style={{ fontFamily:"'Marcellus',serif", fontSize:16, color:'#D4AF37', letterSpacing:'0.2em', textTransform:'uppercase' }}>IntelOps</span>
           </div>
 
-          {/* Main Card */}
-          <div className="bg-white border border-slate-200/80 rounded-[32px] p-10 shadow-[0_20px_50px_rgba(15,23,42,0.06)]">
-            <div className="mb-8">
-              <h1 className="font-['Plus_Jakarta_Sans'] font-black text-2xl text-slate-900 mb-2 tracking-tighter">
-                IntelOps Workspace
-              </h1>
-              <p className="text-[14px] text-slate-500 font-medium leading-relaxed">
-                Restricted to Authorized Team Members.
-              </p>
+          {/* Heading */}
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="h-px w-8" style={{ background:'rgba(212,175,55,0.5)' }} />
+              <span style={{ fontSize:8, color:'#D4AF37', letterSpacing:'0.3em', textTransform:'uppercase' }}>Secure Access</span>
+            </div>
+            <h2 style={{ fontFamily:"'Marcellus',serif", fontSize:28, color:'#F2F0E4', textTransform:'uppercase', letterSpacing:'0.12em', marginBottom:6 }}>Sign In</h2>
+            <p style={{ fontSize:11, color:'#555', letterSpacing:'0.08em' }}>Internal portal access only</p>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <motion.div initial={{ opacity:0, y:-8 }} animate={{ opacity:1, y:0 }}
+              className="flex items-center gap-3 px-4 py-3 mb-6"
+              style={{ border:'1px solid rgba(239,68,68,0.3)', background:'rgba(239,68,68,0.06)', color:'#ef4444' }}>
+              <AlertTriangle size={13} />
+              <span style={{ fontSize:11, letterSpacing:'0.05em' }}>{error}</span>
+            </motion.div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Email */}
+            <div>
+              <label style={{ display:'block', fontSize:9, fontWeight:700, letterSpacing:'0.25em', textTransform:'uppercase', color:'#D4AF37', marginBottom:8 }}>
+                Email Address
+              </label>
+              <input
+                type="email" required
+                className="deco-input"
+                placeholder="your@email.com"
+                value={form.email}
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2.5">
-                <label htmlFor="email" className="block text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase ml-1">
-                  Corporate Email
-                </label>
-                <div className="relative">
-                  <input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="name@intelops.ai"
-                    className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-5 text-[15px] text-slate-900 placeholder:text-slate-300 outline-none transition-all focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-400/10"
-                    required
-                  />
-                </div>
+            {/* Password */}
+            <div>
+              <label style={{ display:'block', fontSize:9, fontWeight:700, letterSpacing:'0.25em', textTransform:'uppercase', color:'#D4AF37', marginBottom:8 }}>
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={show ? 'text' : 'password'} required
+                  className="deco-input"
+                  style={{ paddingRight:36 }}
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                />
+                <button type="button" onClick={() => setShow(s => !s)}
+                  className="absolute right-0 top-1/2 -translate-y-1/2"
+                  style={{ color:'#555', background:'none', border:'none', cursor:'pointer', padding:4 }}
+                  onMouseEnter={e => e.currentTarget.style.color='#D4AF37'}
+                  onMouseLeave={e => e.currentTarget.style.color='#555'}>
+                  {show ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
               </div>
+            </div>
 
-              <div className="space-y-2.5">
-                <div className="flex justify-between items-center px-1">
-                  <label htmlFor="password" className="block text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase">
-                    Security Token
-                  </label>
-                  <button type="button" className="text-[10px] text-indigo-600 font-black hover:text-indigo-700 transition-colors uppercase tracking-widest">
-                    Request Help
-                  </button>
-                </div>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type="password"
-                    autoComplete="current-password"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    placeholder="••••••••"
-                    className="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-5 text-[15px] text-slate-900 placeholder:text-slate-300 outline-none transition-all focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-400/10"
-                    required
-                  />
-                  <Lock size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300" />
-                </div>
-              </div>
-
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center gap-3 text-red-600"
-                >
-                  <AlertCircle size={20} />
-                  <span className="text-[13px] font-bold">Access Denied: Invalid Credentials</span>
-                </motion.div>
+            {/* Submit */}
+            <button type="submit" className="deco-btn-gold" disabled={loading}>
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth={3}><circle cx={12} cy={12} r={10} strokeOpacity={0.3} /><path d="M12 2a10 10 0 0 1 10 10" /></svg>
+                  Authenticating...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <Lock size={12} /> Access Portal
+                </span>
               )}
+            </button>
+          </form>
 
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                disabled={isLoading}
-                className={`w-full h-15 rounded-2xl font-black text-[14px] text-white uppercase tracking-widest transition-all flex items-center justify-center shadow-2xl shadow-indigo-600/20 ${
-                  isLoading 
-                    ? 'bg-slate-300 cursor-not-allowed' 
-                    : 'bg-indigo-600 hover:bg-indigo-500'
-                }`}
-              >
-                {isLoading ? (
-                  <div className="flex items-center gap-3">
-                    <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Verifying Identity...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <span>Sign In</span>
-                    <ArrowRight size={18} />
-                  </div>
-                )}
-              </motion.button>
-            </form>
-
-            <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center gap-5">
-              <div className="flex items-center gap-2 py-1.5 px-4 bg-white border border-slate-200 rounded-full shadow-sm">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Network: Secure Gateway Active</span>
-              </div>
+          {/* Footer */}
+          <div className="mt-10 pt-6 flex items-center justify-between" style={{ borderTop:'1px solid rgba(212,175,55,0.1)' }}>
+            <button onClick={() => navigate('/')} className="text-[9px] uppercase tracking-widest transition-colors"
+              style={{ background:'none', border:'none', cursor:'pointer', color:'#444' }}
+              onMouseEnter={e => e.target.style.color='#D4AF37'} onMouseLeave={e => e.target.style.color='#444'}>
+              ← Back to Home
+            </button>
+            <div className="flex items-center gap-2" style={{ fontSize:8, letterSpacing:'0.18em', textTransform:'uppercase', color:'#444' }}>
+              <span style={{ width:6, height:6, background:'#22c55e', display:'inline-block', animation:'deco-pulse 2s infinite' }} />
+              Systems Online
             </div>
           </div>
         </motion.div>
       </div>
-    </div>  
+    </div>
   );
-};
-
-export default Login;
+}

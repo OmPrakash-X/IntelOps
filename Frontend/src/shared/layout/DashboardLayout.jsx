@@ -1,20 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  LayoutDashboard, 
-  AlertTriangle, 
-  Server, 
-  Users, 
-  Zap, 
-  Settings, 
-  LogOut, 
-  Bell, 
-  Shield,
-  Menu,
-  X,
-  ChevronRight,
-  Activity
+import {
+  LayoutDashboard, AlertTriangle, Server, Users, Zap,
+  Settings, LogOut, Bell, Shield, Menu, X, ChevronRight, Activity
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../features/auth/authSlice';
@@ -23,259 +12,237 @@ import API from '../../services/api';
 
 const sidebarConfigs = {
   admin: [
-    { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { name: 'Incidents', path: '/admin/incidents', icon: AlertTriangle },
-    { name: 'Infrastructure', path: '/admin/infrastructure', icon: Server },
-    { name: 'SRE Team', path: '/admin/team', icon: Users },
-    { name: 'Automation', path: '/admin/automation', icon: Zap },
-    { name: 'Settings', path: '/admin/settings', icon: Settings },
+    { name: 'Dashboard',       path: '/admin',                icon: LayoutDashboard },
+    { name: 'Incidents',       path: '/admin/incidents',      icon: AlertTriangle },
+    { name: 'Infrastructure',  path: '/admin/infrastructure', icon: Server },
+    { name: 'SRE Team',        path: '/admin/team',           icon: Users },
+    { name: 'Automation',      path: '/admin/automation',     icon: Zap },
+    { name: 'Settings',        path: '/admin/settings',       icon: Settings },
   ],
   teamlead: [
-    { name: 'Dashboard', path: '/team-lead', icon: LayoutDashboard },
-    { name: 'My Group', path: '/team-lead/group', icon: Users },
-    { name: 'Incidents Log', path: '/team-lead/incidents', icon: AlertTriangle },
-    { name: 'Notifications', path: '/team-lead/notifications', icon: Bell },
+    { name: 'Dashboard',       path: '/team-lead',                  icon: LayoutDashboard },
+    { name: 'My Group',        path: '/team-lead/group',            icon: Users },
+    { name: 'Incidents Log',   path: '/team-lead/incidents',        icon: AlertTriangle },
+    { name: 'Notifications',   path: '/team-lead/notifications',    icon: Bell },
   ],
   bugger: [
-    { name: 'Dashboard', path: '/bugger', icon: LayoutDashboard },
-    { name: 'My Incidents', path: '/bugger/incidents', icon: AlertTriangle },
-    { name: 'Report Bug', path: '/bugger/report', icon: Zap },
-    { name: 'Notifications', path: '/bugger/notifications', icon: Bell },
+    { name: 'Dashboard',       path: '/bugger',                     icon: LayoutDashboard },
+    { name: 'My Incidents',    path: '/bugger/incidents',           icon: AlertTriangle },
+    { name: 'Report Bug',      path: '/bugger/report',              icon: Zap },
+    { name: 'Notifications',   path: '/bugger/notifications',       icon: Bell },
   ],
 };
 
-const DashboardLayout = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useSelector((state) => state.auth);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [notifications, setNotifications] = useState([]);
-  const [notifOpen, setNotifOpen] = useState(false);
+export default function DashboardLayout() {
+  const dispatch  = useDispatch();
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const { user }  = useSelector(s => s.auth);
+
+  const [sideOpen,   setSideOpen]   = useState(true);
+  const [notifs,     setNotifs]     = useState([]);
+  const [notifOpen,  setNotifOpen]  = useState(false);
   const notifRef = useRef(null);
 
-  const unread = notifications.filter(n => !n.isRead).length;
+  const unread = notifs.filter(n => !n.isRead).length;
 
-  // fetch notifications
   const loadNotifs = async () => {
-    try {
-      const res = await API.get('/notifications');
-      setNotifications(res.data?.data || res.data || []);
-    } catch { /* silent */ }
+    try { const r = await API.get('/notifications'); setNotifs(r.data?.data || r.data || []); }
+    catch {}
   };
 
   useEffect(() => { loadNotifs(); }, []);
 
-  // live socket updates
   useEffect(() => {
-    const socket = getSocket();
-    const handleNew = () => loadNotifs();
-    socket.on('new_notification', handleNew);
-    socket.on('notification', handleNew);
-    return () => {
-      socket.off('new_notification', handleNew);
-      socket.off('notification', handleNew);
-    };
+    const s = getSocket();
+    const fn = () => loadNotifs();
+    s.on('new_notification', fn); s.on('notification', fn);
+    return () => { s.off('new_notification', fn); s.off('notification', fn); };
   }, []);
 
-  // close on outside click
   useEffect(() => {
-    const handler = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const h = e => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
   }, []);
 
   const markAllRead = async () => {
-    const unreadIds = notifications.filter(n => !n.isRead).map(n => n._id);
-    await Promise.all(unreadIds.map(nid => API.patch(`/notifications/${nid}/read`).catch(() => {})));
+    await Promise.all(notifs.filter(n => !n.isRead).map(n => API.patch(`/notifications/${n._id}/read`).catch(() => {})));
     loadNotifs();
   };
 
-  const role = (user?.role || user?.user?.role)?.toLowerCase();
+  const role     = (user?.role || user?.user?.role)?.toLowerCase();
   const navItems = sidebarConfigs[role] || [];
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
-  };
-
-  const getPageTitle = () => {
-    const currentItem = navItems.find(item => item.path === location.pathname);
-    if (currentItem) return currentItem.name;
-    
-    // Handle sub-pages or details
+  const getTitle = () => {
+    const item = navItems.find(i => i.path === location.pathname);
+    if (item) return item.name;
     if (location.pathname.startsWith('/incident/')) return 'Incident Details';
     return 'Command Center';
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-['Inter'] flex overflow-hidden">
-      {/* --- Sidebar --- */}
-      <motion.aside 
+    <div className="min-h-screen flex overflow-hidden bg-[#0A0A0A] font-['Josefin_Sans'] text-[#F2F0E4]">
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Josefin+Sans:wght@300;400;600;700&display=swap');
+        .gold-nav-active { background: rgba(212,175,55,0.12); border-left: 2px solid #D4AF37; color: #D4AF37; }
+        .gold-nav-idle   { border-left: 2px solid transparent; color: #666; }
+        .gold-nav-idle:hover { background: rgba(212,175,55,0.06); color: #D4AF37; border-left-color: rgba(212,175,55,0.4); }
+        .deco-scrollbar::-webkit-scrollbar { width:4px; }
+        .deco-scrollbar::-webkit-scrollbar-track { background:transparent; }
+        .deco-scrollbar::-webkit-scrollbar-thumb { background:rgba(212,175,55,0.2); border-radius:0; }
+      `}</style>
+
+      {/* ── SIDEBAR ── */}
+      <motion.aside
         initial={false}
-        animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className="h-screen bg-slate-900/50 border-r border-white/5 flex flex-col relative z-50 backdrop-blur-xl"
+        animate={{ width: sideOpen ? 260 : 68 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className="h-screen flex flex-col relative z-50 shrink-0 bg-[#0e0e0e] border-r border-[#D4AF37]/15"
       >
-        {/* Logo Section */}
-        <div className="p-6 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30 shrink-0">
-            <Shield size={22} className="text-white" />
+        {/* Logo */}
+        <div className="flex items-center gap-3 px-4 py-5 border-b border-[#D4AF37]/10">
+          <div className="shrink-0 flex items-center justify-center w-9 h-9 border-2 border-[#D4AF37] rotate-45 shadow-[0_0_12px_rgba(212,175,55,0.2)] bg-transparent">
+            <Shield size={15} color="#D4AF37" className="-rotate-45" />
           </div>
           <AnimatePresence>
-            {isSidebarOpen && (
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="overflow-hidden"
-              >
-                <h1 className="text-lg font-black tracking-tighter text-white whitespace-nowrap">IntelOps</h1>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-500 opacity-80 whitespace-nowrap">
-                  {role === 'admin' ? 'Command Center' : role === 'teamlead' ? 'Team Command' : 'Reporter Hub'}
+            {sideOpen && (
+              <motion.div initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-8 }}>
+                <p className="font-['Marcellus'] text-xs font-black uppercase tracking-[0.22em] text-[#D4AF37] whitespace-nowrap">IntelOps</p>
+                <p className="text-[8px] uppercase tracking-[0.18em] text-[#555]">
+                  {role === 'admin' ? 'Command Centre' : role === 'teamlead' ? 'Team Command' : 'Reporter Hub'}
                 </p>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Navigation Section */}
-        <nav className="flex-1 px-4 space-y-2 mt-8 overflow-y-auto custom-scrollbar">
-          {navItems.map((item) => (
+        {/* Nav */}
+        <nav className="flex-1 py-6 overflow-y-auto deco-scrollbar flex flex-col gap-0.5">
+          {navItems.map(item => (
             <NavLink
               key={item.name}
               to={item.path}
-              end={item.path === '/admin' || item.path === '/team-lead' || item.path === '/bugger'}
-              className={({ isActive }) => `
-                flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative
-                ${isActive ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/20' : 'text-slate-500 hover:bg-white/5 hover:text-white'}
-              `}
+              end={['/admin','/team-lead','/bugger'].includes(item.path)}
+              className={({ isActive }) => `flex items-center gap-3 px-4 py-3 transition-all duration-200 cursor-pointer ${isActive ? 'gold-nav-active' : 'gold-nav-idle'}`}
             >
-              <item.icon size={20} className="shrink-0" />
+              <item.icon size={17} className="shrink-0" />
               <AnimatePresence>
-                {isSidebarOpen && (
-                  <motion.span
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    className="text-xs font-black uppercase tracking-widest"
-                  >
+                {sideOpen && (
+                  <motion.span initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+                    className="text-[10px] font-bold uppercase tracking-[0.18em] whitespace-nowrap">
                     {item.name}
                   </motion.span>
                 )}
               </AnimatePresence>
-              {isSidebarOpen && (
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                  <ChevronRight size={14} />
-                </div>
-              )}
             </NavLink>
           ))}
         </nav>
 
-        {/* Bottom Section */}
-        <div className="p-4 border-t border-white/5">
-          {isSidebarOpen && (
-            <div className="mb-4 p-4 rounded-2xl bg-slate-950/50 border border-white/5">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-black text-xs">
-                  {(user?.username || 'A').charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <p className="text-[10px] font-black text-white truncate">{user?.username || 'Admin'}</p>
-                  <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest truncate">{role || 'SRE Lead'}</p>
-                </div>
+        {/* User + Logout */}
+        <div className="p-3 border-t border-[#D4AF37]/10">
+          {sideOpen && (
+            <div className="flex items-center gap-3 px-3 py-3 mb-2 border border-[#D4AF37]/12 bg-[#D4AF37]/[0.04]">
+              <div className="shrink-0 flex items-center justify-center w-7 h-7 bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30 text-xs font-black">
+                {(user?.username || 'A').charAt(0).toUpperCase()}
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-[10px] font-bold truncate text-[#F2F0E4]">{user?.username || 'Admin'}</p>
+                <p className="text-[8px] uppercase tracking-widest text-[#555]">{role}</p>
               </div>
             </div>
           )}
-          <button 
-            onClick={handleLogout}
-            className={`
-              w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-slate-500 hover:bg-red-500/10 hover:text-red-500 transition-all group
-            `}
+          <button
+            onClick={() => { dispatch(logout()); navigate('/login'); }}
+            className="w-full flex items-center gap-3 px-4 py-3 transition-all duration-200 border-l-2 border-transparent text-[#666] hover:text-[#ef4444] hover:border-l-[#ef4444]/40 hover:bg-[#ef4444]/5 cursor-pointer bg-transparent border-t-0 border-r-0 border-b-0"
           >
-            <LogOut size={20} className="shrink-0" />
+            <LogOut size={17} className="shrink-0" />
             <AnimatePresence>
-              {isSidebarOpen && (
-                <motion.span
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  className="text-xs font-black uppercase tracking-widest"
-                >
-                  Logout
+              {sideOpen && (
+                <motion.span initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+                  className="text-[10px] font-bold uppercase tracking-[0.18em]">Logout
                 </motion.span>
               )}
             </AnimatePresence>
           </button>
         </div>
 
-        {/* Toggle Button */}
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center text-slate-500 hover:text-white transition-colors shadow-lg shadow-black/50"
-        >
-          {isSidebarOpen ? <X size={12} /> : <Menu size={12} />}
+        {/* Collapse toggle */}
+        <button onClick={() => setSideOpen(!sideOpen)}
+          className="absolute -right-3 top-1/2 -translate-y-1/2 flex items-center justify-center z-10 w-[22px] h-[22px] bg-[#141414] border border-[#D4AF37]/30 text-[#D4AF37] cursor-pointer hover:bg-[#D4AF37] hover:text-[#0A0A0A] transition-colors">
+          {sideOpen ? <X size={10} /> : <Menu size={10} />}
         </button>
       </motion.aside>
 
-      {/* --- Main Content --- */}
-      <main className="flex-1 h-screen overflow-y-auto bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-900/10 via-slate-950 to-slate-950">
-        <header className="h-20 px-10 flex items-center justify-between border-b border-white/5 sticky top-0 bg-slate-950/80 backdrop-blur-md z-40">
-          <div>
-            <h2 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em]">{getPageTitle()}</h2>
+      {/* ── MAIN ── */}
+      <main className="flex-1 h-screen overflow-y-auto deco-scrollbar bg-[#0A0A0A]">
+
+        {/* Header */}
+        <header className="sticky top-0 z-40 flex items-center justify-between px-8 h-16 bg-[#0A0A0A]/92 backdrop-blur-[12px] border-b border-[#D4AF37]/12">
+          <div className="flex items-center gap-3">
+            <span className="w-0.5 h-5 bg-[#D4AF37] opacity-60" />
+            <h2 className="text-[10px] font-black uppercase tracking-[0.28em] text-[#D4AF37]">{getTitle()}</h2>
           </div>
-          <div className="flex items-center gap-6">
-              {/* Live Notifications Bell */}
-              <div className="relative" ref={notifRef}>
-                <button onClick={() => setNotifOpen(!notifOpen)}
-                  className="relative p-2 text-slate-500 hover:text-white transition-colors">
-                  <Bell size={20} />
-                  {unread > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-indigo-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center">
-                      {unread > 9 ? '9+' : unread}
-                    </span>
-                  )}
-                </button>
+
+          <div className="flex items-center gap-5">
+            {/* Live badge */}
+            <div className="flex items-center gap-2 px-3 py-1.5 text-[8px] font-black uppercase tracking-[0.2em] border border-[#D4AF37]/25 text-[#D4AF37]">
+              <Activity size={10} />
+              Live Engine
+            </div>
+
+            {/* Bell */}
+            <div className="relative" ref={notifRef}>
+              <button onClick={() => setNotifOpen(!notifOpen)}
+                className={`relative flex items-center justify-center p-1.5 transition-colors cursor-pointer bg-transparent border-none ${notifOpen ? 'text-[#D4AF37]' : 'text-[#666] hover:text-[#D4AF37]'}`}>
+                <Bell size={18} />
+                {unread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[14px] h-3.5 px-1 text-[8px] font-black bg-[#D4AF37] text-[#0A0A0A]">
+                    {unread > 9 ? '9+' : unread}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
                 {notifOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-80 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-50">
-                    <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-800">
-                      <span className="text-xs font-bold uppercase tracking-widest text-white">Notifications</span>
+                  <motion.div initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:8 }}
+                    className="absolute right-0 top-full mt-2 w-80 z-50 overflow-hidden bg-[#141414] border border-[#D4AF37]/25 shadow-[0_0_40px_rgba(0,0,0,0.6)]">
+                    <div className="flex items-center justify-between px-5 py-3 border-b border-[#D4AF37]/10">
+                      <span className="text-[9px] font-black uppercase tracking-[0.22em] text-[#D4AF37]">Notifications</span>
                       {unread > 0 && (
-                        <button onClick={markAllRead} className="text-[9px] font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors">Mark all read</button>
+                        <button onClick={markAllRead} className="text-[8px] font-bold uppercase tracking-widest text-[#888] hover:text-[#D4AF37] transition-colors bg-transparent border-none cursor-pointer">
+                          Mark all read
+                        </button>
                       )}
                     </div>
-                    <div className="max-h-80 overflow-y-auto divide-y divide-slate-800/50">
-                      {notifications.length === 0 ? (
-                        <div className="py-10 text-center text-xs text-slate-600">No notifications yet.</div>
-                      ) : notifications.slice(0, 15).map((n, i) => (
-                        <div key={n._id || i} className={`px-5 py-3.5 hover:bg-slate-800/30 transition-colors ${!n.isRead ? 'bg-indigo-600/5' : ''}`}>
-                          <div className="flex items-start gap-3">
-                            {!n.isRead && <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />}
-                            <div className={!n.isRead ? '' : 'ml-4'}>
-                              <p className="text-xs font-medium text-slate-300 leading-snug">{n.message}</p>
-                              <p className="text-[9px] text-slate-600 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                    <div className="max-h-72 overflow-y-auto deco-scrollbar divide-y divide-[#D4AF37]/[0.06]">
+                      {notifs.length === 0 ? (
+                        <div className="py-10 text-center text-[10px] tracking-widest uppercase text-[#444]">No notifications yet</div>
+                      ) : notifs.slice(0, 15).map((n, i) => (
+                        <div key={n._id || i} className={`px-5 py-3 border-b border-[#D4AF37]/[0.06] ${!n.isRead ? 'bg-[#D4AF37]/[0.04]' : ''}`}>
+                          <div className="flex items-start gap-2">
+                            {!n.isRead && <span className="mt-1.5 shrink-0 w-1.5 h-1.5 bg-[#D4AF37]" />}
+                            <div className={!n.isRead ? '' : 'ml-3.5'}>
+                              <p className="text-xs leading-snug text-[#F2F0E4]">{n.message}</p>
+                              <p className="text-[8px] mt-1 tracking-widest uppercase text-[#555]">{new Date(n.createdAt).toLocaleString()}</p>
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </motion.div>
                 )}
-              </div>
-              <div className="h-8 w-px bg-white/10" />
-              <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-xl border border-white/5">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Live Engine</span>
-              </div>
+              </AnimatePresence>
+            </div>
           </div>
         </header>
 
-        <div className="p-10 max-w-7xl mx-auto">
+        {/* Page content */}
+        <div className="p-8 max-w-7xl mx-auto">
           <Outlet />
         </div>
       </main>
     </div>
   );
-};
-
-export default DashboardLayout;
+}

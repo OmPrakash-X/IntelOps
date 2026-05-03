@@ -3,7 +3,9 @@ import {
   createGroup,
   getGroups,
   assignTeamLead,
-  addMembers
+  addMembers,
+  updateGroup,
+  deleteGroup
 } from "../controllers/group.controller.js";
 
 import { protect } from "../middlewares/auth.middleware.js";
@@ -17,7 +19,6 @@ import {
 
 const router = express.Router();
 
-
 router.post(
   "/",
   protect,
@@ -26,14 +27,12 @@ router.post(
   createGroup
 );
 
-
 router.get(
   "/",
   protect,
   allowRoles("admin", "teamLead"),
   getGroups
 );
-
 
 router.patch(
   "/:id/assign-lead",
@@ -49,6 +48,20 @@ router.patch(
   allowRoles("teamLead"),
   validateAddMembers,
   addMembers
+);
+
+router.patch(
+  "/:id",
+  protect,
+  allowRoles("admin"),
+  updateGroup
+);
+
+router.delete(
+  "/:id",
+  protect,
+  allowRoles("admin"),
+  deleteGroup
 );
 
 export default router;

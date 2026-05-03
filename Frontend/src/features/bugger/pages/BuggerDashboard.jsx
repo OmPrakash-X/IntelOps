@@ -10,6 +10,17 @@ import { fetchIncidents } from '../../incidents/incidentSlice';
 import { fetchProjects } from '../../project/projectSlice';
 import { createIncident, getNotifications } from '../../incidents/services/incidents.api';
 
+function Corners({ opacity = "opacity-60" }) {
+  return (
+    <>
+      <span aria-hidden className={`absolute w-2 h-2 border-t-2 border-l-2 border-[#D4AF37] top-1 left-1 pointer-events-none ${opacity}`} />
+      <span aria-hidden className={`absolute w-2 h-2 border-t-2 border-r-2 border-[#D4AF37] top-1 right-1 pointer-events-none ${opacity}`} />
+      <span aria-hidden className={`absolute w-2 h-2 border-b-2 border-l-2 border-[#D4AF37] bottom-1 left-1 pointer-events-none ${opacity}`} />
+      <span aria-hidden className={`absolute w-2 h-2 border-b-2 border-r-2 border-[#D4AF37] bottom-1 right-1 pointer-events-none ${opacity}`} />
+    </>
+  );
+}
+
 const BuggerDashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -77,9 +88,9 @@ const BuggerDashboard = () => {
   };
 
   const severityConfig = {
-    P1: { label: 'P1 - Critical', badge: 'bg-red-500/10 text-red-500 border-red-500/20', desc: 'Production down' },
-    P2: { label: 'P2 - High', badge: 'bg-amber-500/10 text-amber-500 border-amber-500/20', desc: 'Major issue affecting users' },
-    P3: { label: 'P3 - Low', badge: 'bg-blue-500/10 text-blue-500 border-blue-500/20', desc: 'Minor issue or degraded performance' },
+    P1: { label: 'P1 - Critical', badge: 'bg-[#ef4444]/10 text-[#ef4444] border-[#ef4444]/40', desc: 'Production down' },
+    P2: { label: 'P2 - High', badge: 'bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/40', desc: 'Major issue affecting users' },
+    P3: { label: 'P3 - Low', badge: 'bg-[#6366f1]/10 text-[#6366f1] border-[#6366f1]/40', desc: 'Minor issue or degraded performance' },
   };
 
   const myIncidents = incidents.filter(i => (i.createdBy?._id === user?._id || i.createdBy === user?._id));
@@ -96,36 +107,57 @@ const BuggerDashboard = () => {
   };
 
   const renderDashboard = () => (
-    <div className="space-y-10">
+    <div className="space-y-10 font-['Josefin_Sans']">
+      
+      {/* Header Area */}
+      <div>
+        <div className="flex items-center gap-3 mb-2">
+          <span className="h-px w-6 bg-[#D4AF37]/40" />
+          <h2 className="font-['Marcellus'] text-2xl text-[#F2F0E4] uppercase tracking-[0.1em]">Reporter Dashboard</h2>
+        </div>
+        <p className="text-[#888] text-[10px] font-bold uppercase tracking-[0.2em]">Incident Reporting & Tracking</p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'My Submissions', value: stats.reportedByMe, icon: Activity, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-          { label: 'In Progress', value: stats.underInvestigation, icon: ShieldAlert, color: 'text-amber-400', bg: 'bg-amber-400/10' },
-          { label: 'Resolved', value: stats.resolved, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-          { label: 'Last 7 Days', value: stats.thisWeek, icon: Clock, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+          { label: 'My Submissions', value: stats.reportedByMe, icon: Activity, color: '#D4AF37' },
+          { label: 'In Progress', value: stats.underInvestigation, icon: ShieldAlert, color: '#f59e0b' },
+          { label: 'Resolved', value: stats.resolved, icon: CheckCircle, color: '#10b981' },
+          { label: 'Last 7 Days', value: stats.thisWeek, icon: Clock, color: '#D4AF37' },
         ].map((stat, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="p-6 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all group">
-            <div className={`w-10 h-10 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center mb-4`}>
-              <stat.icon size={20} />
+          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} 
+            className="relative p-6 bg-[#141414] border border-[#D4AF37]/15 transition-all duration-300 hover:-translate-y-1 hover:border-[#D4AF37] hover:shadow-[0_0_20px_rgba(212,175,55,0.1)] group">
+            <Corners opacity="opacity-30" />
+            <div className="flex items-center justify-center w-9 h-9 mb-4 border bg-opacity-10 rotate-45" style={{ borderColor: `${stat.color}40`, backgroundColor: `${stat.color}10` }}>
+              <stat.icon size={16} color={stat.color} className="-rotate-45" />
             </div>
-            <div className="text-2xl font-bold mb-0.5">{stat.value}</div>
-            <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">{stat.label}</div>
+            <div className="text-[9px] font-bold text-[#666] uppercase tracking-[0.2em] mb-1">{stat.label}</div>
+            <div className={`font-['Marcellus'] text-3xl ${stat.color === '#D4AF37' ? 'text-[#F2F0E4]' : `text-[${stat.color}]`}`}>{stat.value}</div>
           </motion.div>
         ))}
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center gap-2 px-1">
-          <Layers className="text-indigo-500" size={16} />
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">Available Projects</h2>
+        <div className="flex items-center gap-3 px-1 border-b border-[#D4AF37]/10 pb-4 mb-4">
+          <Layers className="text-[#D4AF37]" size={14} />
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D4AF37]">Available Projects</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {projects.map((proj, i) => (
-            <motion.div key={proj._id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.03 }} className="p-5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition-all">
-              <h3 className="text-sm font-semibold mb-1 truncate">{proj.name}</h3>
-              <p className="text-slate-500 text-[9px] font-semibold uppercase tracking-widest mb-4">Uptime: 99.9%</p>
-              <button onClick={() => openReportModal(proj._id)} className="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] font-semibold uppercase tracking-widest transition-all flex items-center justify-center gap-2 group">
-                Report <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+            <motion.div key={proj._id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.03 }} 
+              className="relative p-5 bg-[#141414] border border-[#D4AF37]/15 hover:border-[#D4AF37]/40 transition-all hover:bg-[#D4AF37]/[0.02]">
+              <Corners opacity="opacity-20" />
+              <h3 className="font-['Marcellus'] text-sm text-[#F2F0E4] mb-1 truncate">{proj.name}</h3>
+              <p className="text-[#666] text-[9px] font-bold uppercase tracking-[0.15em] mb-5">
+                {!proj.group ? (
+                  <span className="text-[#ef4444]">No Squad Assigned</span>
+                ) : (
+                  'Uptime: 99.9%'
+                )}
+              </p>
+              <button onClick={() => openReportModal(proj._id)} disabled={!proj.group}
+                className="w-full py-2.5 bg-transparent border border-[#D4AF37]/30 text-[#D4AF37] text-[9px] font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 group hover:bg-[#D4AF37]/10 hover:border-[#D4AF37] disabled:opacity-30 disabled:cursor-not-allowed">
+                Report Issue <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </motion.div>
           ))}
@@ -133,12 +165,12 @@ const BuggerDashboard = () => {
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="text-red-500" size={16} />
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">Recent History</h2>
+        <div className="flex items-center justify-between px-1 border-b border-[#D4AF37]/10 pb-4 mb-4">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="text-[#D4AF37]" size={14} />
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D4AF37]">Recent History</h2>
           </div>
-          <Link to="/bugger/incidents" className="text-[10px] font-bold text-amber-500 uppercase tracking-widest hover:underline">View All</Link>
+          <Link to="/bugger/incidents" className="text-[9px] font-bold text-[#888] hover:text-[#D4AF37] uppercase tracking-[0.2em] transition-colors">View All</Link>
         </div>
         {renderIncidentsTable(myIncidents.slice(0, 5))}
       </div>
@@ -146,135 +178,151 @@ const BuggerDashboard = () => {
   );
 
   const renderIncidentsTable = (data) => (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-      <table className="w-full text-left">
-        <thead className="bg-slate-800/50">
+    <div className="relative bg-[#141414] border border-[#D4AF37]/15 overflow-hidden">
+      <Corners opacity="opacity-30" />
+      <table className="w-full text-left border-collapse min-w-[800px]">
+        <thead className="bg-[#D4AF37]/[0.03] border-b border-[#D4AF37]/15">
           <tr>
-            <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Severity</th>
-            <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Incident</th>
-            <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Status</th>
-            <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Lead</th>
-            <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Date</th>
+            <th className="px-6 py-4 text-[10px] font-bold text-[#D4AF37] uppercase tracking-[0.2em]">Severity</th>
+            <th className="px-6 py-4 text-[10px] font-bold text-[#D4AF37] uppercase tracking-[0.2em]">Incident</th>
+            <th className="px-6 py-4 text-[10px] font-bold text-[#D4AF37] uppercase tracking-[0.2em]">Status</th>
+            <th className="px-6 py-4 text-[10px] font-bold text-[#D4AF37] uppercase tracking-[0.2em]">Lead</th>
+            <th className="px-6 py-4 text-[10px] font-bold text-[#D4AF37] uppercase tracking-[0.2em]">Date</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-800">
+        <tbody className="divide-y divide-[#D4AF37]/[0.06]">
           {data.map((incident, idx) => {
             const sev = incident.severity === 'high' ? 'P1' : incident.severity === 'medium' ? 'P2' : incident.severity === 'low' ? 'P3' : incident.severity;
             const conf = severityConfig[sev] || severityConfig.P3;
+            const statColor = incident.status === 'resolved' ? '#10b981' : incident.status === 'inProgress' ? '#f59e0b' : '#ef4444';
+            
             return (
-              <motion.tr key={incident._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.02 }} onClick={() => navigate(`/incident/${incident._id}`)} className="group hover:bg-slate-800/30 transition-all cursor-pointer">
+              <motion.tr key={incident._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.02 }} 
+                onClick={() => navigate(`/incident/${incident._id}`)} 
+                className="group hover:bg-[#D4AF37]/[0.04] transition-all cursor-pointer">
                 <td className="px-6 py-4">
-                  <span className={`px-2 py-0.5 rounded text-[9px] font-bold border ${conf.badge}`}>{sev}</span>
+                  <span className={`px-2 py-1 rounded-none text-[9px] font-bold uppercase tracking-[0.1em] border ${conf.badge}`}>{sev}</span>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-xs font-semibold text-white mb-0.5">{incident.title}</div>
-                  <div className="text-[9px] text-slate-500 font-mono tracking-tighter">#{incident._id?.slice(-8)}</div>
+                  <div className="font-['Marcellus'] text-[15px] text-[#F2F0E4] mb-1 group-hover:text-[#D4AF37] transition-colors">{incident.title}</div>
+                  <div className="text-[9px] text-[#666] font-bold uppercase tracking-[0.15em]">#{incident._id?.slice(-8)}</div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex items-center gap-1.5">
-                    <div className={`w-1 h-1 rounded-full ${incident.status === 'open' ? 'bg-red-500' : incident.status === 'resolved' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                    <span className="text-[10px] font-semibold uppercase tracking-widest">{incident.status}</span>
-                  </div>
+                  <span className="px-2.5 py-1 text-[8px] font-bold uppercase tracking-[0.1em]" 
+                    style={{ border: `1px solid ${statColor}40`, background: `${statColor}15`, color: statColor }}>
+                    {incident.status === 'inProgress' ? 'In Progress' : incident.status}
+                  </span>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-[9px] font-bold border border-slate-700">
-                      {incident.assignedLead?.username?.[0].toUpperCase() || 'U'}
+                    <div className="w-6 h-6 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] rotate-45">
+                      <span className="-rotate-45 font-['Marcellus'] text-[11px]">{incident.assignedLead?.username?.[0].toUpperCase() || 'U'}</span>
                     </div>
-                    <span className="text-[10px] font-medium text-slate-400">{incident.assignedLead?.username || 'Unassigned'}</span>
+                    <span className="text-[11px] text-[#F2F0E4] ml-1">{incident.assignedLead?.username || 'Unassigned'}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-[10px] font-medium text-slate-500">{new Date(incident.createdAt).toLocaleDateString()}</td>
+                <td className="px-6 py-4 text-[10px] text-[#888] tracking-[0.05em]">{new Date(incident.createdAt).toLocaleString()}</td>
               </motion.tr>
             );
           })}
         </tbody>
       </table>
       {data.length === 0 && !incidentsLoading && (
-        <div className="py-20 text-center text-slate-500 font-medium italic text-xs">No incidents found.</div>
+        <div className="py-10 text-center text-[#555] text-[10px] uppercase tracking-[0.2em]">No incidents match your criteria</div>
       )}
     </div>
   );
 
   const renderNotifications = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">Notifications</h2>
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{notifications.length} Total</span>
+    <div className="space-y-6 font-['Josefin_Sans']">
+      <div className="flex items-center justify-between px-1 border-b border-[#D4AF37]/10 pb-4 mb-4">
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D4AF37]">Notifications</h2>
+        <span className="text-[9px] font-bold text-[#888] uppercase tracking-[0.2em]">{notifications.length} Total</span>
       </div>
       <div className="space-y-3">
         {notifications.map((notif, i) => (
-          <motion.div key={notif._id || i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} className={`p-5 rounded-xl border ${notif.isRead ? 'bg-slate-900/40 border-slate-800/50 opacity-60' : 'bg-slate-900 border-slate-800 hover:border-slate-700'} transition-all flex items-start gap-4`}>
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${notif.isRead ? 'bg-slate-800 text-slate-600' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
-              <Bell size={16} />
+          <motion.div key={notif._id || i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} 
+            className={`p-5 relative border ${notif.isRead ? 'bg-[#141414]/40 border-[#D4AF37]/5 opacity-60' : 'bg-[#141414] border-[#D4AF37]/15 hover:border-[#D4AF37]/30'} transition-all flex items-start gap-4`}>
+            {!notif.isRead && <Corners opacity="opacity-40" />}
+            <div className={`w-8 h-8 flex items-center justify-center flex-shrink-0 border rotate-45 ${notif.isRead ? 'bg-[#0A0A0A] border-[#D4AF37]/10 text-[#666]' : 'bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/30'}`}>
+              <Bell size={12} className="-rotate-45" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-slate-300 leading-relaxed mb-2">{notif.message}</p>
+            <div className="flex-1 min-w-0 ml-1">
+              <p className="text-xs text-[#F2F0E4] leading-relaxed mb-2">{notif.message}</p>
               <div className="flex items-center gap-3">
-                <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{new Date(notif.createdAt).toLocaleString()}</span>
-                {!notif.isRead && <span className="w-1 h-1 rounded-full bg-amber-500"></span>}
+                <span className="text-[8px] font-bold text-[#666] uppercase tracking-[0.15em]">{new Date(notif.createdAt).toLocaleString()}</span>
+                {!notif.isRead && <span className="w-1.5 h-1.5 bg-[#D4AF37]"></span>}
               </div>
             </div>
           </motion.div>
         ))}
         {notifications.length === 0 && (
-          <div className="py-20 text-center text-slate-500 font-medium italic text-xs">No notifications yet.</div>
+          <div className="py-10 text-center text-[#555] text-[10px] uppercase tracking-[0.2em]">No notifications yet.</div>
         )}
       </div>
     </div>
   );
 
   const renderReportForm = () => (
-    <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20"><Send size={20} /></div>
-          <div>
-            <h3 className="text-lg font-semibold tracking-tight">Report Incident</h3>
-            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest mt-0.5 italic text-emerald-500/80">SRE team will be notified instantly and investigation will begin.</p>
+    <form onSubmit={handleSubmit} className="relative bg-[#141414] border border-[#D4AF37]/30 p-8 shadow-[0_0_40px_rgba(212,175,55,0.1)] font-['Josefin_Sans']">
+      <Corners opacity="opacity-100" />
+      <div className="flex items-center justify-between mb-8 border-b border-[#D4AF37]/20 pb-6">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37] border border-[#D4AF37]/30 rotate-45"><Send size={16} className="-rotate-45" /></div>
+          <div className="ml-2">
+            <h3 className="font-['Marcellus'] text-2xl text-[#D4AF37] uppercase tracking-[0.1em]">Report Incident</h3>
+            <p className="text-[9px] font-bold text-[#888] uppercase tracking-[0.15em] mt-1">SRE team will be notified instantly.</p>
           </div>
         </div>
       </div>
-      <div className="space-y-5">
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest ml-0.5">Incident Title</label>
-          <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-amber-500 outline-none transition-all placeholder:text-slate-800" placeholder="e.g. Latency spike in payment-gateway" />
-          <p className="text-[9px] text-slate-600 font-medium ml-1 flex items-center gap-1"><Info size={10} /> Be specific. Example: Payment API returning 500 errors on checkout</p>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <label className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-[0.2em]">Incident Title *</label>
+          <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} 
+            className="w-full bg-transparent border border-[#D4AF37]/30 px-4 py-3 text-[13px] text-[#F2F0E4] focus:border-[#D4AF37] outline-none transition-all placeholder:text-[#444] font-['Josefin_Sans']" 
+            placeholder="e.g. Latency spike in payment-gateway" />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest ml-0.5">Severity</label>
-            <select value={formData.severity} onChange={e => setFormData({...formData, severity: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-amber-500 outline-none transition-all appearance-none">
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-[0.2em]">Severity *</label>
+            <select value={formData.severity} onChange={e => setFormData({...formData, severity: e.target.value})} 
+              className="w-full bg-[#0A0A0A] border border-[#D4AF37]/30 px-4 py-3 text-[12px] text-[#F2F0E4] focus:border-[#D4AF37] outline-none transition-all font-['Josefin_Sans']">
               <option value="P1">P1 - Critical</option>
               <option value="P2">P2 - High</option>
               <option value="P3">P3 - Low</option>
             </select>
-            <p className="text-[8px] text-slate-600 font-bold uppercase tracking-[0.05em] ml-1 leading-relaxed">{severityConfig[formData.severity].desc}</p>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest ml-0.5">Select affected project</label>
-            <select required value={formData.projectId} onChange={e => setFormData({...formData, projectId: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-amber-500 outline-none transition-all appearance-none">
-              <option value="">Select affected project</option>
-              {projects.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+          <div className="space-y-2">
+            <label className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-[0.2em]">Affected Project *</label>
+            <select required value={formData.projectId} onChange={e => setFormData({...formData, projectId: e.target.value})} 
+              className="w-full bg-[#0A0A0A] border border-[#D4AF37]/30 px-4 py-3 text-[12px] text-[#F2F0E4] focus:border-[#D4AF37] outline-none transition-all font-['Josefin_Sans']">
+              <option value="">Select project</option>
+              {projects.map(p => (
+                <option key={p._id} value={p._id} disabled={!p.group}>
+                  {p.name} {!p.group ? '(No Squad Assigned)' : ''}
+                </option>
+              ))}
             </select>
           </div>
         </div>
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest ml-0.5">Description</label>
-          <textarea required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-amber-500 outline-none transition-all h-32 placeholder:text-slate-800 resize-none" placeholder={"What happened?\nWhat is the impact?\nSteps to reproduce?"} />
+        <div className="space-y-2">
+          <label className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-[0.2em]">Description *</label>
+          <textarea required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} 
+            className="w-full bg-transparent border border-[#D4AF37]/30 px-4 py-3 text-[13px] text-[#F2F0E4] focus:border-[#D4AF37] outline-none transition-all h-32 placeholder:text-[#444] resize-none font-['Josefin_Sans']" 
+            placeholder={"What happened?\nWhat is the impact?\nSteps to reproduce?"} />
         </div>
-        <div className="space-y-3">
-          <button type="submit" disabled={isSubmitting} className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-amber-500/10 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-            {isSubmitting ? <><RefreshCw size={16} className="animate-spin" /> Reporting...</> : 'Submit Incident Report'}
+        <div className="space-y-3 pt-4 border-t border-[#D4AF37]/10">
+          <button type="submit" disabled={isSubmitting} 
+            className="w-full py-4 bg-[#D4AF37] hover:bg-[#F2E8C4] text-[#0A0A0A] font-bold text-[10px] uppercase tracking-[0.25em] transition-all flex items-center justify-center gap-2 border-none cursor-pointer disabled:opacity-50">
+            {isSubmitting ? <><RefreshCw size={14} className="animate-spin" /> Reporting...</> : 'Submit Incident Report'}
           </button>
-          <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest text-center">Incident will be routed to the responsible team automatically</p>
         </div>
       </div>
     </form>
   );
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 font-['Josefin_Sans']">
       {location.pathname === '/bugger' && renderDashboard()}
       {location.pathname === '/bugger/report' && (
         <div className="max-w-2xl mx-auto py-10">
@@ -283,9 +331,9 @@ const BuggerDashboard = () => {
       )}
       {location.pathname === '/bugger/incidents' && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2 px-1">
-            <AlertCircle className="text-red-500" size={16} />
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">My Incident History</h2>
+          <div className="flex items-center gap-3 px-1 border-b border-[#D4AF37]/10 pb-4 mb-4">
+            <AlertCircle className="text-[#D4AF37]" size={14} />
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D4AF37]">My Incident History</h2>
           </div>
           {renderIncidentsTable(myIncidents)}
         </div>
@@ -295,29 +343,30 @@ const BuggerDashboard = () => {
       {/* SUCCESS MODAL */}
       <AnimatePresence>
         {successData && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeModal} className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden p-10 text-center flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-6 border border-emerald-500/20"><CheckCircle size={32} /></div>
-                <h3 className="text-xl font-bold text-white mb-2">Incident reported successfully</h3>
-                <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 mt-2 mb-8">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mr-2">Tracking ID:</span>
-                  <span className="text-sm font-mono text-emerald-400">INC-{successData._id?.slice(-6).toUpperCase()}</span>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80">
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} 
+              className="relative w-full max-w-lg bg-[#141414] border border-[#10b981] p-10 text-center flex flex-col items-center shadow-[0_0_40px_rgba(16,185,129,0.2)]">
+                <Corners opacity="opacity-100" />
+                <div className="w-16 h-16 bg-[#10b981]/10 flex items-center justify-center text-[#10b981] mb-6 border border-[#10b981]/30 rotate-45"><CheckCircle size={24} className="-rotate-45" /></div>
+                <h3 className="font-['Marcellus'] text-2xl text-[#10b981] uppercase tracking-[0.1em] mb-2">Report Successful</h3>
+                <div className="border border-[#10b981]/30 px-6 py-3 mt-4 mb-8 bg-[#10b981]/5">
+                  <span className="text-[9px] font-bold text-[#888] uppercase tracking-[0.2em] mr-3">Tracking ID:</span>
+                  <span className="text-sm font-mono text-[#10b981]">INC-{successData._id?.slice(-6).toUpperCase()}</span>
                 </div>
-                <button onClick={closeModal} className="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all">Return to Dashboard</button>
+                <button onClick={closeModal} className="w-full py-3.5 bg-transparent border border-[#10b981]/50 hover:bg-[#10b981]/10 text-[#10b981] font-bold text-[10px] uppercase tracking-[0.2em] transition-all cursor-pointer">Return to Dashboard</button>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* QUICK REPORT MODAL (if triggered from elsewhere) */}
+      {/* QUICK REPORT MODAL */}
       <AnimatePresence>
         {isModalOpen && !successData && !location.pathname.includes('/report') && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeModal} className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="relative w-full max-w-lg">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80">
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} 
+              className="relative w-full max-w-xl">
                 <div className="absolute right-4 top-4 z-10">
-                  <button onClick={closeModal} className="p-2 text-slate-500 hover:text-white transition-colors"><X size={20} /></button>
+                  <button onClick={closeModal} className="p-2 text-[#666] hover:text-[#D4AF37] transition-colors"><X size={16} /></button>
                 </div>
                 {renderReportForm()}
             </motion.div>
