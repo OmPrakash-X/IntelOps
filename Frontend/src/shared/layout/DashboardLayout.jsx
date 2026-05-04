@@ -103,7 +103,7 @@ export default function DashboardLayout() {
         initial={false}
         animate={{ width: sideOpen ? 260 : 68 }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="h-full flex flex-col shrink-0 z-50 bg-[#0e0e0e] border-r border-[#D4AF37]/15 overflow-hidden"
+        className="h-full flex flex-col shrink-0 relative z-50 bg-[#0e0e0e] border-r border-[#D4AF37]/15"
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-[#D4AF37]/10">
@@ -172,6 +172,11 @@ export default function DashboardLayout() {
           </button>
         </div>
 
+        {/* Collapse toggle */}
+        <button onClick={() => setSideOpen(!sideOpen)}
+          className="absolute -right-3 top-1/2 -translate-y-1/2 flex items-center justify-center z-[60] w-[22px] h-[22px] bg-[#141414] border border-[#D4AF37]/30 text-[#D4AF37] cursor-pointer hover:bg-[#D4AF37] hover:text-[#0A0A0A] transition-colors">
+          {sideOpen ? <X size={10} /> : <Menu size={10} />}
+        </button>
       </motion.aside>
 
       {/* ── MAIN ── */}
