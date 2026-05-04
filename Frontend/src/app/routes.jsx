@@ -143,9 +143,13 @@ export const router = createBrowserRouter([
     path: "/member",
     element: (
       <ProtectedRoute allowedRoles={["teamMember"]}>
-        <ResponderDashboard />
+        <DashboardLayout />
       </ProtectedRoute>
     ),
+    children: [
+      { index: true,                element: <ResponderDashboard /> },
+      { path: "notifications",      element: <ResponderDashboard /> },
+    ]
   },
   {
     path: "/incident/:id",

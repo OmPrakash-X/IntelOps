@@ -31,6 +31,10 @@ const sidebarConfigs = {
     { name: 'Report Bug',      path: '/bugger/report',              icon: Zap },
     { name: 'Notifications',   path: '/bugger/notifications',       icon: Bell },
   ],
+  teammember: [
+    { name: 'My Workspace',    path: '/member',                     icon: LayoutDashboard },
+    { name: 'Notifications',   path: '/member/notifications',       icon: Bell },
+  ],
 };
 
 export default function DashboardLayout() {
@@ -111,7 +115,7 @@ export default function DashboardLayout() {
               <motion.div initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-8 }}>
                 <p className="font-['Marcellus'] text-xs font-black uppercase tracking-[0.22em] text-[#D4AF37] whitespace-nowrap">IntelOps</p>
                 <p className="text-[8px] uppercase tracking-[0.18em] text-[#555]">
-                  {role === 'admin' ? 'Command Centre' : role === 'teamlead' ? 'Team Command' : 'Reporter Hub'}
+                  {role === 'admin' ? 'Command Centre' : role === 'teamlead' ? 'Team Command' : role === 'teammember' ? 'Responder Hub' : 'Reporter Hub'}
                 </p>
               </motion.div>
             )}
@@ -124,7 +128,7 @@ export default function DashboardLayout() {
             <NavLink
               key={item.name}
               to={item.path}
-              end={['/admin','/team-lead','/bugger'].includes(item.path)}
+              end={['/admin','/team-lead','/bugger', '/member'].includes(item.path)}
               className={({ isActive }) => `flex items-center gap-3 px-4 py-3 transition-all duration-200 cursor-pointer ${isActive ? 'gold-nav-active' : 'gold-nav-idle'}`}
             >
               <item.icon size={17} className="shrink-0" />
@@ -168,11 +172,6 @@ export default function DashboardLayout() {
           </button>
         </div>
 
-        {/* Collapse toggle */}
-        <button onClick={() => setSideOpen(!sideOpen)}
-          className="absolute -right-3 top-1/2 -translate-y-1/2 flex items-center justify-center z-10 w-[22px] h-[22px] bg-[#141414] border border-[#D4AF37]/30 text-[#D4AF37] cursor-pointer hover:bg-[#D4AF37] hover:text-[#0A0A0A] transition-colors">
-          {sideOpen ? <X size={10} /> : <Menu size={10} />}
-        </button>
       </motion.aside>
 
       {/* ── MAIN ── */}
