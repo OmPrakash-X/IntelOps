@@ -6,7 +6,7 @@ export const createUser = async (req, res) => {
     const creatorRole = req.user.role;
 
     const rolePermissions = {
-      admin: ["bugger", "teamLead"],
+      admin: ["teamMember", "bugger", "teamLead"],
       teamLead: ["teamMember"]
     };
 

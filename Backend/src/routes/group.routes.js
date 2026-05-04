@@ -45,7 +45,7 @@ router.patch(
 router.patch(
   "/:id/members",
   protect,
-  allowRoles("teamLead"),
+  allowRoles("teamLead", "admin"),
   validateAddMembers,
   addMembers
 );

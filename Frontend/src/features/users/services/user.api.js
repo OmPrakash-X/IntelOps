@@ -6,6 +6,6 @@ export const fetchUsers = async () => {
 };
 
 export const createUser = async (data) => {
-  const res = await API.post("/users", data);
+  const res = await API.post("/users/create", data);
   return res.data;
 };

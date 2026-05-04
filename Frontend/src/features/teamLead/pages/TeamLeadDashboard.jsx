@@ -178,7 +178,7 @@ const TeamLeadDashboard = () => {
                   <div className="flex flex-col">
                     <span className="text-[9px] font-bold text-[#888] uppercase tracking-[0.2em] mb-2">Team Roster</span>
                     <div className="flex -space-x-2">
-                      {myGroup?.teamMembers?.map((m, i) => (
+                      {myGroup?.members?.map((m, i) => (
                         <div key={i} className="w-8 h-8 rounded-none border border-[#D4AF37]/40 bg-[#D4AF37]/5 flex items-center justify-center rotate-45 group-hover:border-[#D4AF37]" title={m.username}>
                           <span className="-rotate-45 font-['Marcellus'] text-[#F2F0E4] text-[10px]">{m.username?.[0]?.toUpperCase() ?? '?'}</span>
                         </div>
@@ -408,7 +408,7 @@ const TeamLeadDashboard = () => {
 
               <div className="max-h-60 overflow-y-auto border border-[#D4AF37]/15 bg-[#D4AF37]/[0.02] mb-6 p-2">
                 {allUsers?.filter(u => {
-                  const notInGroup = !myGroup?.teamMembers?.some(m => m._id === u._id) && myGroup?.teamLead?._id !== u._id;
+                  const notInGroup = !myGroup?.members?.some(m => m._id === u._id) && myGroup?.teamLead?._id !== u._id;
                   const matchesSearch = u.username.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase());
                   return notInGroup && matchesSearch;
                 }).map(u => (
@@ -453,7 +453,7 @@ const TeamLeadDashboard = () => {
               
               <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-[#ef4444]">Select from your team:</div>
               <div className="max-h-60 overflow-y-auto border border-[#ef4444]/15 bg-[#ef4444]/[0.02] mb-6 p-2">
-                {myGroup?.teamMembers?.map(u => {
+                {myGroup?.members?.map(u => {
                   const isAssigned = selectedIncident.responders?.some(r => r._id === u._id);
                   return (
                     <div key={u._id} onClick={() => !isAssigned && setSelectedMembers(prev => prev.includes(u._id) ? prev.filter(id => id !== u._id) : [...prev, u._id])}
@@ -471,7 +471,7 @@ const TeamLeadDashboard = () => {
                     </div>
                   )
                 })}
-                {(!myGroup?.teamMembers || myGroup.teamMembers.length === 0) && (
+                {(!myGroup?.members || myGroup.members.length === 0) && (
                   <p className="p-4 text-center text-[10px] text-[#555] italic">No members in your team to assign.</p>
                 )}
               </div>

@@ -28,12 +28,17 @@ const TeamManagement = () => {
   const [isUserModalOpen,       setIsUserModalOpen]       = useState(false);
   const [isGroupModalOpen,      setIsGroupModalOpen]      = useState(false);
   const [isAssignLeadModalOpen, setIsAssignLeadModalOpen] = useState(false);
+  const [isManageMembersModalOpen, setIsManageMembersModalOpen] = useState(false);
   const [isRenameModalOpen,     setIsRenameModalOpen]     = useState(false);
   const [isDeleteGroupModal,    setIsDeleteGroupModal]    = useState(false);
   const [targetGroup,           setTargetGroup]           = useState(null);
   const [renameValue,           setRenameValue]           = useState('');
   const [selectedGroupId,       setSelectedGroupId]       = useState(null);
   const [selectedLeadId,        setSelectedLeadId]        = useState('');
+  const [selectedMembers,       setSelectedMembers]       = useState([]);
+  const [isAssignUserSquadOpen, setIsAssignUserSquadOpen] = useState(false);
+  const [targetUser,            setTargetUser]            = useState(null);
+  const [assignSquadId,         setAssignSquadId]         = useState('');
   const [isSubmitting,          setIsSubmitting]          = useState(false);
 
   const [newUser, setNewUser] = useState({ username: '', email: '', password: '', role: 'teamMember', groupId: '' });
@@ -100,6 +105,39 @@ const TeamManagement = () => {
       dispatch(fetchUsers());
     } catch (err) {
       alert("Failed to assign lead: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleManageMembers = async () => {
+    setIsSubmitting(true);
+    try {
+      await API.patch(`/groups/${targetGroup._id}/members`, { members: selectedMembers });
+      setIsManageMembersModalOpen(false);
+      setTargetGroup(null);
+      setSelectedMembers([]);
+      dispatch(fetchGroups());
+      dispatch(fetchUsers());
+    } catch (err) {
+      alert("Failed to assign members: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAssignUserToSquad = async () => {
+    if (!targetUser || !assignSquadId) return;
+    setIsSubmitting(true);
+    try {
+      await API.patch(`/groups/${assignSquadId}/members`, { members: [targetUser._id] });
+      setIsAssignUserSquadOpen(false);
+      setTargetUser(null);
+      setAssignSquadId('');
+      dispatch(fetchGroups());
+      dispatch(fetchUsers());
+    } catch (err) {
+      alert('Failed to assign to squad: ' + (err.response?.data?.message || err.message));
     } finally {
       setIsSubmitting(false);
     }
@@ -226,7 +264,16 @@ const TeamManagement = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-[10px] font-bold text-[#888] uppercase tracking-[0.1em]">{getUserGroupName(user)}</span>
+                          {getUserGroupName(user) !== 'Unassigned' ? (
+                            <span className="text-[10px] font-bold text-[#888] uppercase tracking-[0.1em]">{getUserGroupName(user)}</span>
+                          ) : (
+                            <button
+                              onClick={() => { setTargetUser(user); setAssignSquadId(''); setIsAssignUserSquadOpen(true); }}
+                              className="px-2 py-1 bg-[#D4AF37]/5 border border-[#D4AF37]/20 text-[#D4AF37] text-[8px] font-bold uppercase tracking-[0.1em] hover:bg-[#D4AF37]/20 transition-all cursor-pointer flex items-center gap-1.5"
+                            >
+                              <Plus size={9} /> Assign Squad
+                            </button>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
@@ -288,7 +335,13 @@ const TeamManagement = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <p className="text-[8px] font-bold text-[#888] uppercase tracking-[0.2em]">Active Members</p>
-                    <span className="font-['Marcellus'] text-sm text-[#D4AF37]">{(group.members || []).length}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-['Marcellus'] text-sm text-[#D4AF37]">{(group.members || []).length}</span>
+                      <button onClick={() => { setTargetGroup(group); setSelectedMembers((group.members || []).map(m => m._id || m)); setIsManageMembersModalOpen(true); }} title="Manage Members"
+                        className="w-5 h-5 flex items-center justify-center border border-[#D4AF37]/40 bg-[#D4AF37]/5 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#0A0A0A] transition-all cursor-pointer">
+                        <Users size={10} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -431,6 +484,96 @@ const TeamManagement = () => {
                 <button onClick={handleDeleteGroup} disabled={isSubmitting}
                   className="flex-1 py-3 bg-[#ef4444] text-[#0A0A0A] border-none font-bold text-[9px] uppercase tracking-[0.2em] hover:bg-[#f87171] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2">
                   {isSubmitting ? <><RefreshCw size={11} className="animate-spin" /> Disbanding…</> : 'Confirm Disband'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Manage Members Modal */}
+      <AnimatePresence>
+        {isManageMembersModalOpen && targetGroup && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-lg bg-[#141414] border border-[#D4AF37] shadow-[0_0_40px_rgba(212,175,55,0.2)] p-10">
+              <Corners opacity="opacity-100" />
+              <div className="flex items-center justify-between mb-6 border-b border-[#D4AF37]/20 pb-4">
+                <h3 className="font-['Marcellus'] text-2xl text-[#D4AF37] uppercase">Manage Members</h3>
+                <button onClick={() => setIsManageMembersModalOpen(false)} className="bg-transparent border-none text-[#666] hover:text-[#D4AF37] cursor-pointer"><X size={16} /></button>
+              </div>
+              <div className="mb-4 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#D4AF37]" size={14} />
+                <input type="text" placeholder="Search available users..." value={userSearch} onChange={e => setUserSearch(e.target.value)}
+                  className="w-full bg-transparent border border-[#D4AF37]/30 text-[#F2F0E4] text-[12px] pl-9 pr-4 py-2.5 outline-none focus:border-[#D4AF37] font-['Josefin_Sans']" />
+              </div>
+              <div className="max-h-60 overflow-y-auto border border-[#D4AF37]/15 bg-[#D4AF37]/[0.02] mb-6 p-2">
+                {users.filter(u => u.role === 'teamMember' || u.role === 'bugger')
+                  .filter(u => u.username.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase()))
+                  .map(u => {
+                    const isMember = selectedMembers.includes(u._id);
+                    const otherGroup = groups.find(g => g._id !== targetGroup._id && (g.members || []).some(m => m._id === u._id || m === u._id));
+                    
+                    return (
+                      <div key={u._id} onClick={() => { if(!otherGroup) setSelectedMembers(prev => prev.includes(u._id) ? prev.filter(id => id !== u._id) : [...prev, u._id]); }}
+                        className={`flex items-center justify-between p-3 border-b border-[#D4AF37]/5 last:border-0 ${otherGroup ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[#D4AF37]/5'} ${isMember ? 'bg-[#D4AF37]/10' : ''}`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-3.5 h-3.5 border flex items-center justify-center rotate-45 ${isMember ? 'border-[#D4AF37] bg-[#D4AF37]' : 'border-[#D4AF37]/30'}`}>
+                            {isMember && <span className="block w-1.5 h-1.5 bg-[#0A0A0A] rounded-full" />}
+                          </div>
+                          <div>
+                            <div className="text-[12px] text-[#F2F0E4]">{u.username}</div>
+                            <div className="text-[9px] text-[#666]">{u.email}</div>
+                          </div>
+                        </div>
+                        {otherGroup && <span className="text-[8px] font-bold text-[#ef4444] uppercase tracking-[0.1em]">In {otherGroup.name}</span>}
+                      </div>
+                    );
+                })}
+              </div>
+              <div className="flex items-center gap-3 pt-4 border-t border-[#D4AF37]/10">
+                <button onClick={() => setIsManageMembersModalOpen(false)}
+                  className="flex-1 py-3 bg-transparent border border-[#D4AF37]/30 text-[#888] hover:text-[#D4AF37] text-[9px] font-bold uppercase tracking-[0.2em] cursor-pointer">Cancel</button>
+                <button onClick={handleManageMembers} disabled={isSubmitting}
+                  className="flex-1 py-3 bg-[#D4AF37] text-[#0A0A0A] border-none font-bold text-[9px] uppercase tracking-[0.2em] hover:bg-[#F2E8C4] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2">
+                  {isSubmitting ? 'Saving...' : `Save ${selectedMembers.length} Members`}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Assign User to Squad Modal */}
+      <AnimatePresence>
+        {isAssignUserSquadOpen && targetUser && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-md bg-[#141414] border border-[#D4AF37] shadow-[0_0_40px_rgba(212,175,55,0.2)] p-10">
+              <Corners opacity="opacity-100" />
+              <div className="flex items-center justify-between mb-6 border-b border-[#D4AF37]/20 pb-4">
+                <div>
+                  <h3 className="font-['Marcellus'] text-2xl text-[#D4AF37] uppercase">Assign to Squad</h3>
+                  <p className="text-[9px] font-bold text-[#888] uppercase tracking-[0.15em] mt-1">{targetUser.username} · {targetUser.role}</p>
+                </div>
+                <button onClick={() => setIsAssignUserSquadOpen(false)} className="bg-transparent border-none text-[#666] hover:text-[#D4AF37] cursor-pointer"><X size={16} /></button>
+              </div>
+              <div className="space-y-2 mb-6">
+                <label className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-[0.2em]">Select Squad</label>
+                <select value={assignSquadId} onChange={e => setAssignSquadId(e.target.value)}
+                  className="w-full bg-[#0A0A0A] border border-[#D4AF37]/30 px-4 py-3 text-[11px] text-[#F2F0E4] uppercase tracking-[0.1em] focus:border-[#D4AF37] outline-none transition-colors appearance-none font-['Josefin_Sans']">
+                  <option value="">— Choose a squad —</option>
+                  {groups.map(g => (
+                    <option key={g._id} value={g._id}>{g.name} ({(g.members || []).length} members)</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-3 pt-4 border-t border-[#D4AF37]/10">
+                <button onClick={() => setIsAssignUserSquadOpen(false)}
+                  className="flex-1 py-3 bg-transparent border border-[#D4AF37]/30 text-[#888] hover:text-[#D4AF37] text-[9px] font-bold uppercase tracking-[0.2em] cursor-pointer">Cancel</button>
+                <button onClick={handleAssignUserToSquad} disabled={!assignSquadId || isSubmitting}
+                  className="flex-1 py-3 bg-[#D4AF37] text-[#0A0A0A] border-none font-bold text-[9px] uppercase tracking-[0.2em] hover:bg-[#F2E8C4] disabled:opacity-40 cursor-pointer flex items-center justify-center gap-2">
+                  {isSubmitting ? 'Assigning...' : 'Confirm Assignment'}
                 </button>
               </div>
             </motion.div>

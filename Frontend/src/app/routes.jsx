@@ -42,13 +42,12 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
   // ⏳ Wait until full profile is loaded (user starts as {id,role} after login)
   if (token && !user?.username) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-10 font-['Inter']">
-        <div className="relative">
-          <div className="w-20 h-20 rounded-full border-4 border-indigo-500/10 border-t-indigo-500 animate-spin mb-8" />
-          <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full animate-pulse" />
+      <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-10 font-['Josefin_Sans'] relative overflow-hidden">
+        <div className="relative flex flex-col items-center">
+          <div className="w-16 h-16 border-2 border-[#D4AF37]/20 border-t-[#D4AF37] rounded-none rotate-45 animate-spin mb-10" />
+          <h2 className="text-xl font-['Marcellus'] text-[#F2F0E4] uppercase tracking-[0.2em] mb-2">Syncing Profile</h2>
+          <p className="text-[#D4AF37] text-[9px] font-bold uppercase tracking-[0.3em] opacity-80">Securing your command session...</p>
         </div>
-        <h2 className="text-xl font-black text-white uppercase tracking-widest opacity-50 mb-2">Syncing Profile</h2>
-        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-8">Securing your session...</p>
       </div>
     );
   }
@@ -159,10 +158,10 @@ export const router = createBrowserRouter([
   {
     path: "*",
     element: (
-      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-10 font-['Inter'] text-center">
-        <h1 className="text-9xl font-black opacity-10">404</h1>
-        <h2 className="text-4xl font-black mb-4">Route Missing</h2>
-        <a href="/" className="px-8 py-3 bg-indigo-600 rounded-xl font-black uppercase tracking-widest text-xs">Return Home</a>
+      <div className="min-h-screen bg-[#0A0A0A] text-[#F2F0E4] flex flex-col items-center justify-center p-10 font-['Josefin_Sans'] text-center">
+        <h1 className="text-8xl font-['Marcellus'] text-[#D4AF37] opacity-20 mb-4 tracking-widest">404</h1>
+        <h2 className="text-3xl font-['Marcellus'] uppercase tracking-[0.1em] mb-8">Route Missing</h2>
+        <a href="/" className="px-6 py-3 bg-transparent border border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#0A0A0A] transition-colors font-bold uppercase tracking-[0.2em] text-[10px]">Return to IntelOps</a>
       </div>
     )
   }
