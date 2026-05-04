@@ -1,6 +1,24 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, useLocation, Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import Lenis from "lenis";
+import "lenis/dist/lenis.css";
+
+const DASHBOARD_PREFIXES = ['/admin', '/team-lead', '/member', '/bugger', '/incident'];
+
+const RootLayout = () => {
+  const location = useLocation();
+  useEffect(() => {
+    const isDash = DASHBOARD_PREFIXES.some(p => location.pathname.startsWith(p));
+    if (isDash) return;
+    const lenis = new Lenis();
+    const raf = (time) => { lenis.raf(time); requestAnimationFrame(raf); };
+    requestAnimationFrame(raf);
+    return () => lenis.destroy();
+  }, [location.pathname]);
+  return <Outlet />;
+};
 
 // pages
 import Login from "../features/auth/pages/Login";
@@ -79,6 +97,9 @@ const PublicRoute = ({ children }) => {
 };
 
 export const router = createBrowserRouter([
+  {
+    element: <RootLayout />,
+    children: [
   {
     path: "/",
     element: <Landing />,
@@ -169,4 +190,5 @@ export const router = createBrowserRouter([
       </div>
     )
   }
+  ] } // close children + RootLayout object
 ]);

@@ -86,7 +86,7 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen flex overflow-hidden bg-[#0A0A0A] font-['Josefin_Sans'] text-[#F2F0E4]">
+    <div className="h-screen flex bg-[#0A0A0A] font-['Josefin_Sans'] text-[#F2F0E4]">
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Josefin+Sans:wght@300;400;600;700&display=swap');
@@ -103,7 +103,7 @@ export default function DashboardLayout() {
         initial={false}
         animate={{ width: sideOpen ? 260 : 68 }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="h-screen flex flex-col relative z-50 shrink-0 bg-[#0e0e0e] border-r border-[#D4AF37]/15"
+        className="h-full flex flex-col shrink-0 z-50 bg-[#0e0e0e] border-r border-[#D4AF37]/15 overflow-hidden"
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-[#D4AF37]/10">
@@ -175,7 +175,7 @@ export default function DashboardLayout() {
       </motion.aside>
 
       {/* ── MAIN ── */}
-      <main className="flex-1 h-screen overflow-y-auto deco-scrollbar bg-[#0A0A0A]">
+      <main className="flex-1 h-full overflow-y-scroll deco-scrollbar bg-[#0A0A0A]">
 
         {/* Header */}
         <header className="sticky top-0 z-40 flex items-center justify-between px-8 h-16 bg-[#0A0A0A]/92 backdrop-blur-[12px] border-b border-[#D4AF37]/12">

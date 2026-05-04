@@ -4,22 +4,10 @@ import { useDispatch, useSelector } from 'react-redux'
 import { router } from './routes'
 import { fetchMyProfile } from '../features/auth/authSlice'
 import { connectSocket, disconnectSocket } from '../lib/socket'
-import Lenis from 'lenis'
-import 'lenis/dist/lenis.css'
 
 const App = () => {
   const dispatch = useDispatch();
   const { token, user } = useSelector((state) => state.auth);
-
-  useEffect(() => {
-    const lenis = new Lenis()
-    function raf(time) {
-      lenis.raf(time)
-      requestAnimationFrame(raf)
-    }
-    requestAnimationFrame(raf)
-    return () => lenis.destroy()
-  }, []);
 
   useEffect(() => {
     if (token && !user?.username) {

@@ -1,9 +1,24 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, ChevronRight, CheckCircle, Clock } from 'lucide-react';
+import { Sparkles, ChevronRight, CheckCircle, Clock, AlertTriangle, Zap, FileText } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchIncidents } from '../../incidents/incidentSlice';
 import { Link } from 'react-router-dom';
+
+// Safely parse AI JSON — the backend returns stringified JSON objects
+const parseAI = (raw) => {
+  if (!raw) return null;
+  if (typeof raw === 'object') return raw;
+  try {
+    // Strip markdown code fences if present
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return { _raw: raw }; // fallback: plain text
+  }
+};
+
+const PRIORITY_COLOR = { critical: '#ef4444', high: '#f59e0b', medium: '#6366f1', low: '#10b981' };
 
 function Corners({ opacity = "opacity-60" }) {
   return (
@@ -101,18 +116,81 @@ const AutomationManagement = () => {
                         {inc.status === 'resolved' && <CheckCircle size={12} color="#10b981" />}
                       </div>
                       <h4 className="font-['Marcellus'] text-sm text-[#F2F0E4] group-hover:text-[#D4AF37] transition-colors truncate mb-3">{inc.title}</h4>
-                      {inc.aiSuggestions?.nextAction && (
-                        <div className="p-3 bg-[#D4AF37]/[0.05] border border-[#D4AF37]/15 mb-2">
-                          <p className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-[0.2em] mb-1">Next Action</p>
-                          <p className="text-[11px] text-[#ccc] leading-snug">{inc.aiSuggestions.nextAction}</p>
-                        </div>
-                      )}
-                      {inc.postmortem?.summary && (
-                        <div className="p-3 bg-[#10b981]/[0.05] border border-[#10b981]/15 mb-2">
-                          <p className="text-[9px] font-bold text-[#10b981] uppercase tracking-[0.2em] mb-1">Postmortem Generated</p>
-                          <p className="text-[11px] text-[#ccc] leading-snug line-clamp-2">{inc.postmortem.summary}</p>
-                        </div>
-                      )}
+                      {inc.aiSuggestions?.nextAction && (() => {
+                        const ai = parseAI(inc.aiSuggestions.nextAction);
+                        if (!ai) return null;
+                        if (ai._raw) return (
+                          <div className="p-3 bg-[#D4AF37]/[0.05] border border-[#D4AF37]/15 mb-2">
+                            <p className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-[0.2em] mb-1">Next Action</p>
+                            <p className="text-[11px] text-[#ccc] leading-relaxed">{ai._raw}</p>
+                          </div>
+                        );
+                        const actions = Array.isArray(ai.actions) ? ai.actions : Array.isArray(ai) ? ai : [];
+                        const priority = ai.priority || (actions[0]?.priority);
+                        const pColor = PRIORITY_COLOR[priority?.toLowerCase()] || '#D4AF37';
+                        return (
+                          <div className="mb-3 border border-[#D4AF37]/15 bg-[#D4AF37]/[0.03]">
+                            <div className="flex items-center justify-between px-4 py-2 border-b border-[#D4AF37]/10">
+                              <div className="flex items-center gap-2">
+                                <Zap size={11} color="#D4AF37" />
+                                <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-[0.2em]">Next Actions</span>
+                              </div>
+                              {priority && (
+                                <span className="px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] border"
+                                  style={{ borderColor: `${pColor}40`, background: `${pColor}10`, color: pColor }}>
+                                  {priority}
+                                </span>
+                              )}
+                            </div>
+                            <div className="divide-y divide-[#D4AF37]/[0.06]">
+                              {actions.map((act, idx) => {
+                                const item = typeof act === 'string' ? { action: act } : act;
+                                const iColor = PRIORITY_COLOR[item.priority?.toLowerCase()] || '#D4AF37';
+                                return (
+                                  <div key={idx} className="flex items-start gap-3 px-4 py-3">
+                                    <span className="flex items-center justify-center w-5 h-5 border text-[8px] font-bold shrink-0 mt-0.5"
+                                      style={{ borderColor: `${iColor}40`, color: iColor }}>{idx + 1}</span>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-[11px] text-[#F2F0E4] leading-relaxed">{item.action}</p>
+                                      {item.rationale && <p className="text-[10px] text-[#888] mt-1 leading-relaxed italic">{item.rationale}</p>}
+                                      {item.estimatedResolutionHint && <p className="text-[9px] text-[#D4AF37]/60 mt-1 uppercase tracking-[0.1em]">⏱ {item.estimatedResolutionHint}</p>}
+                                    </div>
+                                    {item.priority && (
+                                      <span className="text-[7px] font-bold uppercase px-1.5 py-0.5 border shrink-0"
+                                        style={{ borderColor: `${iColor}30`, color: iColor }}>{item.priority}</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            {ai.summary && <div className="px-4 py-2 border-t border-[#D4AF37]/10"><p className="text-[10px] text-[#888] leading-relaxed italic">{ai.summary}</p></div>}
+                          </div>
+                        );
+                      })()}
+                      {inc.postmortem?.summary && (() => {
+                        const pm = parseAI(inc.postmortem.summary);
+                        if (!pm) return null;
+                        if (pm._raw) return (
+                          <div className="p-3 bg-[#10b981]/[0.05] border border-[#10b981]/15 mb-2">
+                            <p className="text-[9px] font-bold text-[#10b981] uppercase tracking-[0.2em] mb-1">Postmortem Generated</p>
+                            <p className="text-[11px] text-[#ccc] leading-relaxed line-clamp-3">{pm._raw}</p>
+                          </div>
+                        );
+                        return (
+                          <div className="mb-2 border border-[#10b981]/20 bg-[#10b981]/[0.03]">
+                            <div className="flex items-center gap-2 px-4 py-2 border-b border-[#10b981]/10">
+                              <FileText size={11} color="#10b981" />
+                              <span className="text-[9px] font-bold text-[#10b981] uppercase tracking-[0.2em]">Postmortem Filed</span>
+                            </div>
+                            <div className="px-4 py-3 space-y-2">
+                              {pm.summary && <p className="text-[11px] text-[#ccc] leading-relaxed">{pm.summary}</p>}
+                              {pm.rootCause && <p className="text-[10px] text-[#888] leading-relaxed"><span className="text-[#10b981] font-bold">Root Cause: </span>{pm.rootCause}</p>}
+                              {pm.impact && <p className="text-[10px] text-[#888] leading-relaxed"><span className="text-[#f59e0b] font-bold">Impact: </span>{pm.impact}</p>}
+                              {pm.lessonsLearned && <p className="text-[10px] text-[#888] leading-relaxed"><span className="text-[#6366f1] font-bold">Lessons: </span>{pm.lessonsLearned}</p>}
+                            </div>
+                          </div>
+                        );
+                      })()}
                       {inc.aiSuggestions?.timelineSummary && (
                         <div className="p-3 bg-[#D4AF37]/[0.02] border border-[#D4AF37]/10 mb-2">
                           <p className="text-[9px] font-bold text-[#888] uppercase tracking-[0.2em] mb-1">Timeline Summary</p>
