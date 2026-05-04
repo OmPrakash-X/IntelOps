@@ -226,6 +226,8 @@ npm run dev   # Start on http://localhost:5173
 
 <div align="center">
 
+<img src="./Frontend/public/images/favicon.png" width="80" alt="Tech Pirates Logo" style="border-radius: 50%; margin-bottom: 15px;" />
+
 **Built with ❤️ by Team Tech Pirates for Sheryians Coding School Hackathon**
 
 *Go explore the platform and break things that's what it's designed to track.*
