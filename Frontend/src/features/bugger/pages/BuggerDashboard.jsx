@@ -282,7 +282,7 @@ const BuggerDashboard = () => {
             className="w-full bg-transparent border border-[#D4AF37]/30 px-4 py-3 text-[13px] text-[#F2F0E4] focus:border-[#D4AF37] outline-none transition-all placeholder:text-[#444] font-['Josefin_Sans']" 
             placeholder="e.g. Latency spike in payment-gateway" />
         </div>
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-[0.2em]">Severity *</label>
             <select value={formData.severity} onChange={e => setFormData({...formData, severity: e.target.value})} 

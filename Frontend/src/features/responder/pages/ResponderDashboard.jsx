@@ -106,7 +106,7 @@ const ResponderDashboard = () => {
 
       {/* Stats Row — show on dashboard & incidents view */}
       {!isNotifications && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { label: 'Assigned', value: myTasks.length, icon: Activity, color: '#D4AF37' },
             { label: 'Open', value: openCount, icon: AlertCircle, color: '#ef4444' },

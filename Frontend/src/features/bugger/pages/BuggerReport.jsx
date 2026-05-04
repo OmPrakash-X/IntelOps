@@ -72,7 +72,7 @@ const BuggerReport = () => {
       </div>
 
       {/* Severity picker */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {SEVERITY.map(s => (
           <button key={s.value} type="button" onClick={() => set('severity', s.value)}
             className={`relative p-4 text-left transition-all cursor-pointer border ${form.severity === s.value ? `${s.border} ${s.bg} ${s.text}` : 'border-[#D4AF37]/15 bg-[#141414] text-[#666] hover:border-[#D4AF37]/30 hover:text-[#D4AF37]'}`}>

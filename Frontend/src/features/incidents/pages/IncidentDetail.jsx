@@ -419,7 +419,7 @@ export default function IncidentDetail() {
         <div className="lg:col-span-8 space-y-8">
 
           {/* Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: 'Status', v: incident.status, c: statColor, i: Activity },
               { label: 'Project', v: incident.project?.name || '—', c: '#D4AF37', i: Shield },
